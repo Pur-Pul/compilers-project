@@ -29,18 +29,48 @@ class Token:
             return NotImplemented
         return self.text == other.text and self.type == other.type and (self.source == other.source or self.source == L or other.source == L)
 
+def byLocation(token: Token) -> int:
+    return token.source.row*1000 + token.source.column
+
 def tokenize(source_code: str) -> list[Token]:
-    pattern = re.compile(r'([A-Za-z_][A-Za-z0-9_]*|[0-9]+)')
-    rows = source_code.split('\n')
+    print(source_code)
+    one_line_comment_pat = re.compile(r'(#|//).*$')
+    multi_line_comment_pat = re.compile(r'(/\*).*(.*\n)*?.*?(\*/)')
+
+    identifier_pat= re.compile(r'(?<!\d)([A-Za-z_][A-Za-z0-9_]*)') #(?!#.*)
+    int_literal_pat = re.compile(r'(?<![a-zA-Z])\d+(?![a-zA-Z])')
+    operator_pat = re.compile(r'[=!<>]=|[+\-*/=<>]')
+    punctuation_pat = re.compile(r'[(){},;]')
+    linebreak_pat = re.compile(r'\n')
     tokens: list[Token] = []
+
+    for match in multi_line_comment_pat.finditer(source_code): #find mult-line comments and replace them with equal length whitespace while precerving line breaks.
+        length = match.end(0) - match.start(0)
+        empty_string = " " * length
+        for linebreak in linebreak_pat.finditer(match.group(0)):
+            empty_string = "\n".join([empty_string[:linebreak.start(0)],empty_string[linebreak.end(0):]])
+        print([source_code[:match.start(0)],source_code[match.end(0):]])
+        source_code = empty_string.join([source_code[:match.start(0)],source_code[match.end(0):]])
+
+    rows = source_code.split('\n')
     for row_i, row in enumerate(rows):
-        for match in pattern.finditer(row):
+        for match in one_line_comment_pat.finditer(row): #find one-line comments and replace them with equal length whitespace.
+            length = match.end(0) - match.start(0)
+            empty_string = " " * length
+            row = empty_string.join([row[:match.start(0)],row[match.end(0):]])
+    
+        for match in identifier_pat.finditer(row):
             col_i = match.start(0)
-            type = "identifier"
-            if match.group(0).isnumeric():
-                type = "int_literal"
-            tokens.append(Token(match.group(0), type, Source('', row_i, col_i)))
+            tokens.append(Token(match.group(0), "identifier", Source('', row_i, col_i)))
+        for match in int_literal_pat.finditer(row):
+            col_i = match.start(0)
+            tokens.append(Token(match.group(0), "int_literal", Source('', row_i, col_i)))
+        for match in operator_pat.finditer(row):
+            col_i = match.start(0)
+            tokens.append(Token(match.group(0), "operator", Source('', row_i, col_i)))
 
+        
+    tokens.sort(key=byLocation)
+    for token in tokens:
+        print(token, token.type)
     return tokens
-
-#tokenize("if  3\nwhile")
