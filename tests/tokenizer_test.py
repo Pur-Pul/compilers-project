@@ -75,6 +75,28 @@ def test_tokenizer_operators() -> None:
         Token(text="a", type="identifier", source=L),
     ]
 
+def test_tokenizer_punctutation() -> None:
+    assert tokenize("(){},;") == [
+        Token(text="(", type="punctuation", source=L),
+        Token(text=")", type="punctuation", source=L),
+        Token(text="{", type="punctuation", source=L),
+        Token(text="}", type="punctuation", source=L),
+        Token(text=",", type="punctuation", source=L),
+        Token(text=";", type="punctuation", source=L)
+    ]
+    assert tokenize("(hello){there},whats;up") == [
+        Token(text="(", type="punctuation", source=L),
+        Token(text="hello", type="identifier", source=L),
+        Token(text=")", type="punctuation", source=L),
+        Token(text="{", type="punctuation", source=L),
+        Token(text="there", type="identifier", source=L),
+        Token(text="}", type="punctuation", source=L),
+        Token(text=",", type="punctuation", source=L),
+        Token(text="whats", type="identifier", source=L),
+        Token(text=";", type="punctuation", source=L),
+        Token(text="up", type="identifier", source=L)
+    ]
+
 def test_tokenizer_one_line_comments() -> None:
     assert tokenize("#hello") == []
     assert tokenize("hello #bye") == [Token(text="hello", type="identifier", source=L)]

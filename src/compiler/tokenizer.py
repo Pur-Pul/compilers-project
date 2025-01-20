@@ -68,6 +68,9 @@ def tokenize(source_code: str) -> list[Token]:
         for match in operator_pat.finditer(row):
             col_i = match.start(0)
             tokens.append(Token(match.group(0), "operator", Source('', row_i, col_i)))
+        for match in punctuation_pat.finditer(row):
+            col_i = match.start(0)
+            tokens.append(Token(match.group(0), "punctuation", Source('', row_i, col_i)))
 
         
     tokens.sort(key=byLocation)
