@@ -41,16 +41,14 @@ def tokenize(source_code: str) -> list[Token]:
     int_literal_pat = re.compile(r'^(?<![a-zA-Z])\d+(?![a-zA-Z])')
     operator_pat = re.compile(r'^[=!<>]=|[+\-*/=<>]')
     punctuation_pat = re.compile(r'^[(){},;]')
-    linebreak_pat = re.compile(r'^\n')
+    linebreak_pat = re.compile('^\n')
     tokens: list[Token] = []
 
     start = 0
     row = 0
     col = 0
     while(start < len(source_code)):
-    #for i in range(1, len(source_code)):
         print("checking from", start)
-        col+=1
         whitespace = whitespace_pat.search(source_code[start:])
         one_line_comment = one_line_comment_pat.search(source_code[start:])
         multi_line_comment = multi_line_comment_pat.search(source_code[start:])
@@ -60,29 +58,47 @@ def tokenize(source_code: str) -> list[Token]:
         punctuation = punctuation_pat.search(source_code[start:])
         linebreak = linebreak_pat.search(source_code[start:])
         
-
-        if whitespace:
+        if linebreak:
+            row += 1
+            col = 0
+            start += linebreak.end(0)
+        elif whitespace:
             start += whitespace.end(0)
+            col += whitespace.end(0)
         elif multi_line_comment:
+            comment_start = multi_line_comment.start(0)
+            comment_end = multi_line_comment.end(0)
+            print(comment_start,comment_end)
+            linebreak_n = len(re.compile(r'\n').findall(multi_line_comment.group(0)))
+            print(linebreak_n)
+            if linebreak_n:
+                for i, match in enumerate(re.compile(r'\n').finditer(multi_line_comment.group(0))):
+                    row += 1
+                    if i == linebreak_n-1:
+                        col = multi_line_comment.start(0) + match.end(0)
+            else:
+                col += multi_line_comment.end(0)
             start += multi_line_comment.end(0)
         elif one_line_comment:
+            #row += 1
+            col += one_line_comment.end(0)
             start += one_line_comment.end(0)
         elif identifier:
             tokens.append(Token(text=identifier.group(0),type="identifier",source=Source('',row,col)))
             start += identifier.end(0)
+            col += identifier.end(0)
         elif int_literal:
             tokens.append(Token(text=int_literal.group(0),type="int_literal",source=Source('',row,col)))
             start += int_literal.end(0)
+            col += int_literal.end(0)
         elif operator:
             tokens.append(Token(text=operator.group(0),type="operator",source=Source('',row,col)))
             start += operator.end(0)
+            col += operator.end(0)
         elif punctuation:
             tokens.append(Token(text=punctuation.group(0),type="punctuation",source=Source('',row,col)))
             start += punctuation.end(0)
-        elif linebreak:
-            row += 1
-            col = 0
-            start += linebreak.end(0)
+            col += punctuation.end(0)
         else:
             print(source_code[start])
             start+=1

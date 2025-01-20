@@ -1,4 +1,4 @@
-from compiler.tokenizer import tokenize, Token, L
+from compiler.tokenizer import tokenize, Token, L, Source
 
 def test_tokenizer_basics() -> None:
     assert tokenize("if  3\nwhile") == [
@@ -116,3 +116,12 @@ def test_tokenizer_multi_line_comments() -> None:
     assert tokenize("hi/*hello\nthere*/") == [Token(text="hi", type="identifier", source=L)]
     assert tokenize("hi/*hello\nthere*/bye") == [Token(text="hi", type="identifier", source=L),Token(text="bye", type="identifier", source=L)]
     assert tokenize("hi/*hello\nthere\nwhat\nup*/bye") == [Token(text="hi", type="identifier", source=L),Token(text="bye", type="identifier", source=L)]
+
+def test_tokenizer_source() -> None:
+    assert tokenize("hello") == [Token(text="hello", type="identifier", source=Source('', 0, 0))]
+    assert tokenize("hello there") == [Token(text="hello", type="identifier", source=Source('', 0, 0)),Token(text="there", type="identifier", source=Source('', 0, 6))]
+    assert tokenize("/*hello*/ there") == [Token(text="there", type="identifier", source=Source('', 0, 10))]
+    assert tokenize("hello\nthere") == [Token(text="hello", type="identifier", source=Source('', 0, 0)),Token(text="there", type="identifier", source=Source('', 1, 0))]
+    assert tokenize("#hello\nthere") == [Token(text="there", type="identifier", source=Source('', 1, 0))]
+    assert tokenize("/*hello*/\nthere") == [Token(text="there", type="identifier", source=Source('', 1, 0))]
+    assert tokenize("/*hello\nhello*/\nhello there") == [Token(text="hello", type="identifier", source=Source('', 2, 0)), Token(text="there", type="identifier", source=Source('', 2, 6))]
