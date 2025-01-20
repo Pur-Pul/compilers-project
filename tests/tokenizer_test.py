@@ -115,3 +115,4 @@ def test_tokenizer_multi_line_comments() -> None:
     assert tokenize("/*hello\nthere*/bye*/") == [Token(text="bye", type="identifier", source=L),Token(text="*", type="operator", source=L),Token(text="/", type="operator", source=L)]
     assert tokenize("hi/*hello\nthere*/") == [Token(text="hi", type="identifier", source=L)]
     assert tokenize("hi/*hello\nthere*/bye") == [Token(text="hi", type="identifier", source=L),Token(text="bye", type="identifier", source=L)]
+    assert tokenize("hi/*hello\nthere\nwhat\nup*/bye") == [Token(text="hi", type="identifier", source=L),Token(text="bye", type="identifier", source=L)]
