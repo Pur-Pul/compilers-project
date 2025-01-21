@@ -29,9 +29,6 @@ class Token:
             return NotImplemented
         return self.text == other.text and self.type == other.type and (self.source == other.source or self.source == L or other.source == L)
 
-def byLocation(token: Token) -> int:
-    return token.source.row*1000 + token.source.column
-
 def tokenize(source_code: str) -> list[Token]:
     print(source_code)
     one_line_comment_pat = re.compile(r'^(#|//).*')
