@@ -170,6 +170,7 @@ def test_if_else_nested_with_operations() -> None:
             ),
         ),
     )
+
 def test_if_else_in_operation() -> None:
     tokens = [
         Token("1", "int_literal", L),
@@ -356,3 +357,317 @@ def test_function_with_nested_functions() -> None:
             )
         ]
     )
+
+def test_assignment() -> None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("=", "operator", L),
+        Token("b", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.Assignment(
+        ast.Identifier("a"),
+        "=",
+        ast.Identifier("b")
+    )
+
+def test_nested_assignments() -> None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("=", "operator", L),
+        Token("b", "identifier", L),
+        Token("=", "operator", L),
+        Token("c", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.Assignment(
+        ast.Identifier("a"),
+        "=",
+        ast.Assignment(
+            ast.Identifier("b"),
+            "=",
+            ast.Identifier("c")
+        )
+    )
+
+def test_nested_assignments_with_operations() -> None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("=", "operator", L),
+        Token("b", "identifier", L),
+        Token("+", "operator", L),
+        Token("c", "identifier", L),
+        Token("=", "operator", L),
+        Token("d", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.Assignment(
+        ast.Identifier("a"),
+        "=",
+        ast.Assignment(
+            ast.BinaryOp(
+                ast.Identifier("b"),
+                "+",
+                ast.Identifier("c")
+            ),
+            "=",
+            ast.Identifier("d")
+        )
+    )
+
+def test_or() -> None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("or", "identifier", L),
+        Token("b", "identifier", L),
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.Identifier("a"),
+        "or",
+        ast.Identifier("b")
+    )
+
+def test_ors_nested() -> None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("or", "identifier", L),
+        Token("b", "identifier", L),
+        Token("or", "identifier", L),
+        Token("c", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.BinaryOp(
+            ast.Identifier("a"),
+            "or",
+            ast.Identifier("b")
+        ),
+        "or",
+        ast.Identifier("c")
+    )
+
+def test_and() ->None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("and", "identifier", L),
+        Token("b", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.Identifier("a"),
+        "and",
+        ast.Identifier("b")
+    )
+
+def test_ands_nested() -> None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("and", "identifier", L),
+        Token("b", "identifier", L),
+        Token("and", "identifier", L),
+        Token("c", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.BinaryOp(
+            ast.Identifier("a"),
+            "and",
+            ast.Identifier("b")
+        ),
+        "and",
+        ast.Identifier("c")
+    )
+
+def test_and_or_nested() -> None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("and", "identifier", L),
+        Token("b", "identifier", L),
+        Token("or", "identifier", L),
+        Token("c", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.BinaryOp(
+            ast.Identifier("a"),
+            "and",
+            ast.Identifier("b")
+        ),
+        "or",
+        ast.Identifier("c")
+    )
+
+def test_or_and_nested() -> None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("or", "identifier", L),
+        Token("b", "identifier", L),
+        Token("and", "identifier", L),
+        Token("c", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.Identifier("a"),
+        "or",
+        ast.BinaryOp(
+            ast.Identifier("b"),
+            "and",
+            ast.Identifier("c")
+        )
+    )
+
+def test_equal_and_not_equal() ->None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("==", "operator", L),
+        Token("b", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.Identifier("a"),
+        "==",
+        ast.Identifier("b")
+    )
+
+    tokens = [
+        Token("a", "identifier", L),
+        Token("!=", "operator", L),
+        Token("b", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.Identifier("a"),
+        "!=",
+        ast.Identifier("b")
+    )
+
+def test_equal_and_not_equal_nested() -> None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("==", "operator", L),
+        Token("b", "identifier", L),
+        Token("==", "operator", L),
+        Token("c", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.BinaryOp(
+            ast.Identifier("a"),
+            "==",
+            ast.Identifier("b")
+        ),
+        "==",
+        ast.Identifier("c")
+    )
+
+    tokens = [
+        Token("a", "identifier", L),
+        Token("==", "operator", L),
+        Token("b", "identifier", L),
+        Token("!=", "operator", L),
+        Token("c", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.BinaryOp(
+            ast.Identifier("a"),
+            "==",
+            ast.Identifier("b")
+        ),
+        "!=",
+        ast.Identifier("c")
+    )
+
+    tokens = [
+        Token("a", "identifier", L),
+        Token("!=", "operator", L),
+        Token("b", "identifier", L),
+        Token("==", "operator", L),
+        Token("c", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.BinaryOp(
+            ast.Identifier("a"),
+            "!=",
+            ast.Identifier("b")
+        ),
+        "==",
+        ast.Identifier("c")
+    )
+
+def test_equal_notequal_and_nested() -> None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("==", "operator", L),
+        Token("b", "identifier", L),
+        Token("and", "identifier", L),
+        Token("c", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.BinaryOp(
+            ast.Identifier("a"),
+            "==",
+            ast.Identifier("b")
+        ),
+        "and",
+        ast.Identifier("c")
+    )
+
+    tokens = [
+        Token("a", "identifier", L),
+        Token("!=", "operator", L),
+        Token("b", "identifier", L),
+        Token("and", "identifier", L),
+        Token("c", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.BinaryOp(
+            ast.Identifier("a"),
+            "!=",
+            ast.Identifier("b")
+        ),
+        "and",
+        ast.Identifier("c")
+    )
+
+def test_and_equal_not_equal_nested() -> None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("and", "identifier", L),
+        Token("b", "identifier", L),
+        Token("==", "operator", L),
+        Token("c", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.Identifier("a"),
+        "and",
+        ast.BinaryOp(
+            ast.Identifier("b"),
+            "==",
+            ast.Identifier("c")
+        )
+    )
+
+    tokens = [
+        Token("a", "identifier", L),
+        Token("and", "identifier", L),
+        Token("b", "identifier", L),
+        Token("!=", "operator", L),
+        Token("c", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(
+        ast.Identifier("a"),
+        "and",
+        ast.BinaryOp(
+            ast.Identifier("b"),
+            "!=",
+            ast.Identifier("c")
+        )
+    )
+    

@@ -20,6 +20,13 @@ class BinaryOp(Expression):
     right: Expression
 
 @dataclass
+class Assignment(Expression):
+    """AST node for a asignment operation like `A = B`"""
+    left: Expression
+    op: str
+    right: Expression
+
+@dataclass
 class IfClause(Expression):
     """AST node for an if statement"""
     condition: Expression

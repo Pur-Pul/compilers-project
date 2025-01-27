@@ -3,6 +3,17 @@ import compiler.ast as ast
 
 def parse(tokens: list[Token]) -> ast.Expression:
     pos = 0
+    left_associative_binary_operators = [
+        ['or'],
+        ['and'],
+        ['==', '!='],
+        ['<', '<=', '>', '>='],
+        ['+', '-'],
+        ['*', '/'],
+    ]
+    right_associative_binary_operators = [
+        ['=']
+    ]
 
     def peek() -> Token:
         if len(tokens) == 0:
@@ -45,21 +56,21 @@ def parse(tokens: list[Token]) -> ast.Expression:
     
     def parse_parenthesized() -> ast.Expression:
         consume('(')
-        expr = parse_expression()
+        expr = parse_expression_right(0)
         consume(')')
         return expr
 
     def parse_if() -> ast.IfClause:
         consume('if')
-        condition = parse_expression()
+        condition = parse_expression_right(0)
         consume('then')
-        then = parse_expression()
+        then = parse_expression_right(0)
         if peek().text == 'else':
             consume('else')
             return ast.IfClause(
                 condition,
                 then,
-                parse_expression()
+                parse_expression_right(0)
             )
         else:
             return ast.IfClause(
@@ -67,7 +78,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 then
             )
     def parse_list() -> list[ast.Expression]:
-        expr = parse_expression()
+        expr = parse_expression_right(0)
         if peek().text == ',':
             consume(',')
             return [expr] + parse_list()
@@ -83,7 +94,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         )
 
     def parse_factor() -> ast.Expression:
-        print(peek())
+        print(peek().text)
         if peek().text == '(':
             return parse_parenthesized()
         elif peek().text == 'if':
@@ -99,11 +110,14 @@ def parse(tokens: list[Token]) -> ast.Expression:
             case _:
                 raise Exception(f'{peek().source}: expected "(", an integer literal or an identifier')
 
-    def parse_term() -> ast.Expression:
-        left = parse_factor()
-        while peek().text in ['*', '/']:
+    def parse_expression(index: int) -> ast.Expression:
+        if index == len(left_associative_binary_operators):
+            return parse_factor()
+
+        left = parse_expression(index+1)
+        while peek().text in left_associative_binary_operators[index]:
             operator_token = consume()
-            right = parse_factor()
+            right = parse_expression(index+1)
             left = ast.BinaryOp(
                 left,
                 operator_token.text,
@@ -111,24 +125,15 @@ def parse(tokens: list[Token]) -> ast.Expression:
             )
         return left
 
-    def parse_expression() -> ast.Expression:
-        left = parse_term()
-        while peek().text in ['+', '-']:
-            operator_token = consume()
-            right = parse_term()
-            left = ast.BinaryOp(
-                left,
-                operator_token.text,
-                right
-            )
-        return left
+    def parse_expression_right(index: int) -> ast.Expression:
+        if index == len(right_associative_binary_operators):
+            return parse_expression(0)
 
-    def parse_expression_right() -> ast.Expression:
-        left = parse_term()
-        if peek().text in ['=']:
+        left = parse_expression_right(index+1)
+        if peek().text in right_associative_binary_operators[index]:
             operator_token = consume()
-            right = parse_expression_right()
-            return ast.BinaryOp(
+            right = parse_expression_right(0)
+            return ast.Assignment(
                 left,
                 operator_token.text,
                 right
@@ -136,7 +141,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         else:
             return left
     
-    main_expression = parse_expression()
+    main_expression = parse_expression_right(0)
     if peek().type != "end":
         raise(Exception(f'{peek().source}: garbage at end of expression.'))
     return main_expression
