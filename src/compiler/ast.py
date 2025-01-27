@@ -25,3 +25,9 @@ class IfClause(Expression):
     condition: Expression
     then: Expression
     otherwise: Optional[Expression] = None
+
+@dataclass
+class FunctionCall(Expression):
+    """AST node for a function call"""
+    function: Identifier
+    parameters: list[Expression]

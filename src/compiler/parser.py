@@ -66,8 +66,24 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 condition,
                 then
             )
+    def parse_list() -> list[ast.Expression]:
+        expr = parse_expression()
+        if peek().text == ',':
+            consume(',')
+            return [expr] + parse_list()
+        return [expr]
+
+    def parse_function(function_name: ast.Identifier) -> ast.Expression:
+        consume('(')
+        params = parse_list()
+        consume(')')
+        return ast.FunctionCall(
+            function_name,
+            params
+        )
 
     def parse_factor() -> ast.Expression:
+        print(peek())
         if peek().text == '(':
             return parse_parenthesized()
         elif peek().text == 'if':
@@ -76,7 +92,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
             case 'int_literal':
                 return parse_int_literal()
             case 'identifier':
-                return parse_identifier()
+                identifier = parse_identifier()
+                if peek().text == '(':
+                    return parse_function(identifier)
+                return identifier
             case _:
                 raise Exception(f'{peek().source}: expected "(", an integer literal or an identifier')
 
