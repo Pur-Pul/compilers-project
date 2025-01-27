@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 @dataclass
 class Expression:
     """Base class for AST nodes representing expressions."""
@@ -17,3 +18,10 @@ class BinaryOp(Expression):
     left: Expression
     op: str
     right: Expression
+
+@dataclass
+class IfClause(Expression):
+    """AST node for an if statement"""
+    condition: Expression
+    then: Expression
+    otherwise: Optional[Expression] = None

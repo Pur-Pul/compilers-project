@@ -49,9 +49,29 @@ def parse(tokens: list[Token]) -> ast.Expression:
         consume(')')
         return expr
 
+    def parse_if() -> ast.IfClause:
+        consume('if')
+        condition = parse_expression()
+        consume('then')
+        then = parse_expression()
+        if peek().text == 'else':
+            consume('else')
+            return ast.IfClause(
+                condition,
+                then,
+                parse_expression()
+            )
+        else:
+            return ast.IfClause(
+                condition,
+                then
+            )
+
     def parse_factor() -> ast.Expression:
         if peek().text == '(':
             return parse_parenthesized()
+        elif peek().text == 'if':
+            return parse_if()
         match peek().type:
             case 'int_literal':
                 return parse_int_literal()

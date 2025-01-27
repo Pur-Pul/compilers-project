@@ -57,3 +57,22 @@ def test_empty_tokens_fails_gracefully() -> None:
     with pytest.raises(Exception) as e:
         parse([])
     assert(e.value.args[0]) == ':0:0: expected "(", an integer literal or an identifier'
+
+def test_if_identifier_then_identifier() -> None:
+    tokens = [Token("if", "identifier", L), Token("something", "identifier", L), Token("then", "identifier", L), Token("somethingElse", "identifier", L)]
+    assert(parse(tokens)) == ast.IfClause(ast.Identifier("something"),ast.Identifier("somethingElse"))
+
+def test_if_identifier_then_identifier_else_identifier() -> None:
+    tokens = [Token("if", "identifier", L), Token("something", "identifier", L), Token("then", "identifier", L), Token("somethingElse", "identifier", L), Token("else", "identifier", L), Token("somethingThird", "identifier", L)]
+    assert(parse(tokens)) == ast.IfClause(ast.Identifier("something"),ast.Identifier("somethingElse"),ast.Identifier("somethingThird"))
+
+def test_if_else_nested() -> None:
+    tokens = [
+        Token("if", "identifier", L),
+        Token("something", "identifier", L),
+        Token("then", "identifier", L),
+            Token("if", "identifier", L),
+            Token("somethingElse", "identifier", L),
+            Token
+        Token("else", "identifier", L),
+        Token("somethingThird", "identifier", L)]
