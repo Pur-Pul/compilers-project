@@ -977,4 +977,110 @@ def test_expressions_unary_nested() -> None:
                         ast.Identifier(expression[5].text),
                     )
              )
-            
+
+def test_parse_block_with_one_identfier() -> None:
+    tokens = [
+        Token("{", "punctuation", L),
+        Token("a", "identifier", L),
+        Token("}", "punctuation", L),
+    ]
+    assert(parse(tokens)) == ast.Block(
+        [],
+        ast.Identifier("a")
+    )
+
+    tokens = [
+        Token("{", "punctuation", L),
+        Token("a", "identifier", L),
+        Token(";", "punctuation", L),
+        Token("}", "punctuation", L),
+    ]
+    assert(parse(tokens)) == ast.Block(
+        [ast.Identifier("a")],
+        ast.Literal(None)
+    )
+
+def test_parse_block_nested() -> None:
+    tokens = [
+        Token("{", "punctuation", L),
+            Token("a", "identifier", L),
+            Token(";", "punctuation", L),
+            Token("{", "punctuation", L),
+                Token("b", "identifier", L),
+                Token(";", "punctuation", L),
+            Token("}", "punctuation", L),
+            Token(";", "punctuation", L),
+            Token("c", "identifier", L),
+        Token("}", "punctuation", L)
+    ]
+
+    assert(parse(tokens)) == ast.Block(
+        [
+            ast.Identifier("a"),
+            ast.Block(
+                [ast.Identifier("b")],
+                ast.Literal(None)
+            )
+        ],
+        ast.Identifier("c")
+    )
+
+def test_parse_block_expression_nested() -> None:
+    expressions = [
+        [Token('a', 'identifier', L),Token('+', 'int_literal', L),Token('b', 'identifier', L)],
+        [Token('if', 'identifier', L), Token('a', 'identifier', L), Token('then', 'identifier', L), Token('b', 'identifier', L), Token('else', 'identifier', L), Token('c', 'identifier', L)]
+    ]
+    tokens = [Token("{", "punctuation", L)] + expressions[0] + [Token(";", "punctuation", L)] + expressions[1] + [Token(";", "punctuation", L)] + [Token("}", "punctuation", L)]
+    assert(parse(tokens)) == ast.Block(
+        [
+            ast.BinaryOp(
+                ast.Identifier('a'),
+                '+',
+                ast.Identifier('b')
+            ),
+            ast.IfClause(
+                ast.Identifier('a'),
+                ast.Identifier('b'),
+                ast.Identifier('c')
+            )
+        ],
+        ast.Literal(None)
+    )
+
+def test_expression_parse_block_expression_nested() -> None:
+    expressions = [
+        [Token('a', 'identifier', L),Token('+', 'int_literal', L),Token('b', 'identifier', L)],
+        [Token('if', 'identifier', L), Token('a', 'identifier', L), Token('then', 'identifier', L), Token('b', 'identifier', L), Token('else', 'identifier', L), Token('c', 'identifier', L)]
+    ]
+    tokens = [Token('z', 'identifier', L), Token('=', 'operator', L)] + [Token("{", "punctuation", L)] + expressions[0] + [Token(";", "punctuation", L)] + expressions[1] + [Token(";", "punctuation", L)] + [Token("}", "punctuation", L)]
+    assert(parse(tokens)) == ast.Assignment(
+        ast.Identifier('z'),
+        '=',
+        ast.Block(
+            [
+                ast.BinaryOp(
+                    ast.Identifier('a'),
+                    '+',
+                    ast.Identifier('b')
+                ),
+                ast.IfClause(
+                    ast.Identifier('a'),
+                    ast.Identifier('b'),
+                    ast.Identifier('c')
+                )
+            ],
+            ast.Literal(None)
+        )
+    )
+
+def test_block_missing_semicolon_fails_gracefully() -> None:
+    tokens = [
+        Token("{", "punctuation", L),
+        Token("a", "identifier", L),
+        Token("b", "identifier", L),
+        Token("}", "punctuation", L)
+    ]
+
+    with pytest.raises(Exception) as e:
+        parse(tokens)
+    assert(e.value.args[0]) == ':0:0: expected "}"'

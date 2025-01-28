@@ -87,7 +87,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return [expr] + parse_list()
         return [expr]
 
-    def parse_function(function_name: ast.Identifier) -> ast.Expression:
+    def parse_function(function_name: ast.Identifier) -> ast.FunctionCall:
         consume('(')
         params = parse_list()
         consume(')')
@@ -95,11 +95,30 @@ def parse(tokens: list[Token]) -> ast.Expression:
             function_name,
             params
         )
+    
+    def parse_block(first: bool = True) -> ast.Block:
+        if first:
+            consume('{')
+        if peek().text == '}':
+            consume('}')
+            return ast.Block([], ast.Literal(None))
+
+        expr = parse_expression_right_binary()
+        if peek().text == ';':
+            consume(';')
+            block = parse_block(False)
+            block.expressions = [expr] + block.expressions
+            return block
+        else:
+            consume('}')
+            return ast.Block([], expr)
 
     def parse_factor() -> ast.Expression:
         print(peek().text)
         if peek().text == '(':
             return parse_parenthesized()
+        elif peek().text == "{":
+            return parse_block()
         elif peek().text == 'if':
             return parse_if()
         match peek().type:

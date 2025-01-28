@@ -6,7 +6,7 @@ class Expression:
 
 @dataclass
 class Literal(Expression):
-    value: int | bool
+    value: int | bool | None
 
 @dataclass
 class Identifier(Expression):
@@ -38,6 +38,12 @@ class IfClause(Expression):
     condition: Expression
     then: Expression
     otherwise: Optional[Expression] = None
+
+@dataclass
+class Block(Expression):
+    """AST node for a block like { f(a); x = y; f(x) }"""
+    expressions: list[Expression]
+    result: Expression
 
 @dataclass
 class FunctionCall(Expression):
