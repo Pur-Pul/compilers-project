@@ -20,6 +20,12 @@ class BinaryOp(Expression):
     right: Expression
 
 @dataclass
+class UnaryOp(Expression):
+    """AST node for a unary operation like `not A`"""
+    op: str
+    right: Expression
+
+@dataclass
 class Assignment(Expression):
     """AST node for a asignment operation like `A = B`"""
     left: Expression

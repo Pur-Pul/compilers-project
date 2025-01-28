@@ -9,10 +9,13 @@ def parse(tokens: list[Token]) -> ast.Expression:
         ['==', '!='],
         ['<', '<=', '>', '>='],
         ['+', '-'],
-        ['*', '/'],
+        ['*', '/', '%'],
     ]
     right_associative_binary_operators = [
         ['=']
+    ]
+    unary_operators = [
+        ['-', 'not']
     ]
 
     def peek() -> Token:
@@ -56,21 +59,21 @@ def parse(tokens: list[Token]) -> ast.Expression:
     
     def parse_parenthesized() -> ast.Expression:
         consume('(')
-        expr = parse_expression_right(0)
+        expr = parse_expression_right_binary()
         consume(')')
         return expr
 
     def parse_if() -> ast.IfClause:
         consume('if')
-        condition = parse_expression_right(0)
+        condition = parse_expression_right_binary()
         consume('then')
-        then = parse_expression_right(0)
+        then = parse_expression_right_binary()
         if peek().text == 'else':
             consume('else')
             return ast.IfClause(
                 condition,
                 then,
-                parse_expression_right(0)
+                parse_expression_right_binary()
             )
         else:
             return ast.IfClause(
@@ -78,7 +81,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 then
             )
     def parse_list() -> list[ast.Expression]:
-        expr = parse_expression_right(0)
+        expr = parse_expression_right_binary()
         if peek().text == ',':
             consume(',')
             return [expr] + parse_list()
@@ -110,14 +113,26 @@ def parse(tokens: list[Token]) -> ast.Expression:
             case _:
                 raise Exception(f'{peek().source}: expected "(", an integer literal or an identifier')
 
-    def parse_expression(index: int) -> ast.Expression:
-        if index == len(left_associative_binary_operators):
+    def parse_expression_unary(index: int = 0) -> ast.Expression:
+        if index == len(unary_operators):
             return parse_factor()
+        while peek().text in unary_operators[index]:
+            operator_token = consume()
+            right = parse_expression_unary()
+            return ast.UnaryOp(
+                operator_token.text,
+                right
+            )
+        return parse_expression_unary(index+1)
 
-        left = parse_expression(index+1)
+    def parse_expression_left_binary(index: int = 0) -> ast.Expression:
+        if index == len(left_associative_binary_operators):
+            return parse_expression_unary()
+
+        left = parse_expression_left_binary(index+1)
         while peek().text in left_associative_binary_operators[index]:
             operator_token = consume()
-            right = parse_expression(index+1)
+            right = parse_expression_left_binary(index+1)
             left = ast.BinaryOp(
                 left,
                 operator_token.text,
@@ -125,14 +140,14 @@ def parse(tokens: list[Token]) -> ast.Expression:
             )
         return left
 
-    def parse_expression_right(index: int) -> ast.Expression:
+    def parse_expression_right_binary(index: int = 0) -> ast.Expression:
         if index == len(right_associative_binary_operators):
-            return parse_expression(0)
+            return parse_expression_left_binary()
 
-        left = parse_expression_right(index+1)
+        left = parse_expression_right_binary(index+1)
         if peek().text in right_associative_binary_operators[index]:
             operator_token = consume()
-            right = parse_expression_right(0)
+            right = parse_expression_right_binary()
             return ast.Assignment(
                 left,
                 operator_token.text,
@@ -141,7 +156,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         else:
             return left
     
-    main_expression = parse_expression_right(0)
+    main_expression = parse_expression_right_binary()
     if peek().type != "end":
         raise(Exception(f'{peek().source}: garbage at end of expression.'))
     return main_expression

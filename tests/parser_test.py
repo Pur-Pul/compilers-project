@@ -23,35 +23,99 @@ def test_parse_multiple_literals_fails() -> None:
         parse(tokens)
     assert(e.value.args[0]) == 'filename:5:7: garbage at end of expression.'
 
-def test_parse_addition_operation() -> None:
-    tokens = [Token("1", "int_literal", L),Token("+", "operation", L),Token("2", "int_literal", L)]
-    assert(parse(tokens)) == ast.BinaryOp(ast.Literal(1),"+",ast.Literal(2))
+def test_parse_plus_minus() -> None:
+    operators = ["+", "-"]
+    for operator in operators:
+        tokens = [
+            Token("1", "int_literal", L),
+            Token(operator, "operation", L),
+            Token("2", "int_literal", L)
+        ]
+        assert(parse(tokens)) == ast.BinaryOp(
+            ast.Literal(1),
+            operator,
+            ast.Literal(2)
+        )
 
-def test_parse_subtraction_operation() -> None:
-    tokens = [Token("1", "int_literal", L),Token("-", "operation", L),Token("2", "int_literal", L)]
-    assert(parse(tokens)) == ast.BinaryOp(ast.Literal(1),"-",ast.Literal(2))
+def test_parse_multiplication_division_modulo() -> None:
+    operators = ["*", "/", "%"]
+    for operator in operators:
+        tokens = [
+            Token("1", "int_literal", L),
+            Token(operator, "operation", L),
+            Token("2", "int_literal", L)]
+        assert(parse(tokens)) == ast.BinaryOp(
+            ast.Literal(1),
+            operator,
+            ast.Literal(2)
+        )
 
-def test_parse_multiplication_operation() -> None:
-    tokens = [Token("1", "int_literal", L),Token("*", "operation", L),Token("2", "int_literal", L)]
-    assert(parse(tokens)) == ast.BinaryOp(ast.Literal(1),"*",ast.Literal(2))
+def test_plus_minus_nested() -> None:
+    operators = ["+", "-"]
+    for operator1 in operators:
+        for operator2 in operators:
+            tokens = [
+                Token("1", "int_literal", L),
+                Token(operator1, "operation", L),
+                Token("2", "int_literal", L),
+                Token(operator2, "operation", L),
+                Token("3", "int_literal", L)
+            ]
+            assert(parse(tokens)) == ast.BinaryOp(
+                ast.BinaryOp(
+                    ast.Literal(1),
+                    operator1,
+                    ast.Literal(2)
+                ),
+                operator2,
+                ast.Literal(3)
+            )
 
-def test_parse_division_operation() -> None:
-    tokens = [Token("1", "int_literal", L),Token("/", "operation", L),Token("2", "int_literal", L)]
-    assert(parse(tokens)) == ast.BinaryOp(ast.Literal(1),"/",ast.Literal(2))
+def test_multiplication_division_modulo_plus_minus_nested() -> None:
+    operators1 = ["*", "/", "%"]
+    operators2 = ["+", "-"]
+    for operator1 in operators1:
+        for operator2 in operators2:
+            tokens = [
+                Token("1", "int_literal", L),
+                Token(operator1, "operation", L),
+                Token("2", "int_literal", L),
+                Token(operator2, "operation", L),
+                Token("3", "int_literal", L)
+            ]
+            assert(parse(tokens)) == ast.BinaryOp(
+                ast.BinaryOp(
+                    ast.Literal(1),
+                    operator1,
+                    ast.Literal(2)
+                ),
+                operator2,
+                ast.Literal(3)
+                
+            )
 
-def test_nested_operation_is_left_associative() -> None:
-    tokens = [Token("1", "int_literal", L),Token("+", "operation", L),Token("2", "int_literal", L),Token("-", "operation", L),Token("3", "int_literal", L)]
-    assert(parse(tokens)) == ast.BinaryOp(ast.BinaryOp(ast.Literal(1),"+",ast.Literal(2)),"-",ast.Literal(3))
-
-def test_in_nested_operation_multiplication_and_division_has_presedence_over_addition_and_subtraction() -> None:
-    tokens = [Token("1", "int_literal", L),Token("+", "operation", L),Token("2", "int_literal", L),Token("*", "operation", L),Token("3", "int_literal", L)]
-    assert(parse(tokens)) == ast.BinaryOp(ast.Literal(1),"+",ast.BinaryOp(ast.Literal(2),"*",ast.Literal(3)),)
-    tokens = [Token("1", "int_literal", L),Token("+", "operation", L),Token("2", "int_literal", L),Token("/", "operation", L),Token("3", "int_literal", L)]
-    assert(parse(tokens)) == ast.BinaryOp(ast.Literal(1),"+",ast.BinaryOp(ast.Literal(2),"/",ast.Literal(3)),)
-    tokens = [Token("1", "int_literal", L),Token("-", "operation", L),Token("2", "int_literal", L),Token("*", "operation", L),Token("3", "int_literal", L)]
-    assert(parse(tokens)) == ast.BinaryOp(ast.Literal(1),"-",ast.BinaryOp(ast.Literal(2),"*",ast.Literal(3)),)
-    tokens = [Token("1", "int_literal", L),Token("-", "operation", L),Token("2", "int_literal", L),Token("/", "operation", L),Token("3", "int_literal", L)]
-    assert(parse(tokens)) == ast.BinaryOp(ast.Literal(1),"-",ast.BinaryOp(ast.Literal(2),"/",ast.Literal(3)),)
+def test_plus_minus_multiplication_division_modulo_nested() -> None:
+    operators1 = ["+", "-"]
+    operators2 = ["*", "/", "%"]
+    for operator1 in operators1:
+        for operator2 in operators2:
+            tokens = [
+                Token("1", "int_literal", L),
+                Token(operator1, "operation", L),
+                Token("2", "int_literal", L),
+                Token(operator2, "operation", L),
+                Token("3", "int_literal", L)
+            ]
+            assert(parse(tokens)) == ast.BinaryOp(
+                ast.Literal(1),
+                operator1,
+                ast.BinaryOp(
+                    ast.Literal(2),
+                    operator2,
+                    ast.Literal(3)
+                )
+                
+            )
 
 def test_empty_tokens_fails_gracefully() -> None:
     with pytest.raises(Exception) as e:
@@ -670,4 +734,247 @@ def test_and_equal_not_equal_nested() -> None:
             ast.Identifier("c")
         )
     )
-    
+
+def test_inequalities() -> None:
+    inequalities = ["<", "<=", ">", ">="]
+    for inequality in inequalities:
+        tokens = [
+            Token("a", "identifier", L),
+            Token(inequality, "operator", L),
+            Token("b", "identifier", L)
+        ]
+
+        assert(parse(tokens)) == ast.BinaryOp(
+            ast.Identifier("a"),
+            inequality,
+            ast.Identifier("b")
+        )
+
+def test_inequalities_nested() -> None:
+    inequalities = ["<", "<=", ">", ">="]
+    for inequality1 in inequalities:
+        for inequality2 in inequalities:
+            tokens = [
+                Token("a", "identifier", L),
+                Token(inequality1, "operator", L),
+                Token("b", "identifier", L),
+                Token(inequality2, "operator", L),
+                Token("c", "identifier", L)
+            ]
+
+            assert(parse(tokens)) == ast.BinaryOp(
+                ast.BinaryOp(
+                    ast.Identifier("a"),
+                    inequality1,
+                    ast.Identifier("b")
+                ),
+                inequality2,
+                ast.Identifier("c")
+            )
+
+def test_inequalities_equal_not_equal_nested() -> None:
+    inequalities = ["<", "<=", ">", ">="]
+    equalities = ["==", "!="]
+    for inequality in inequalities:
+        for equality in equalities:
+            tokens = [
+                Token("a", "identifier", L),
+                Token(inequality, "operator", L),
+                Token("b", "identifier", L),
+                Token(equality, "operator", L),
+                Token("c", "identifier", L)
+            ]
+
+            assert(parse(tokens)) == ast.BinaryOp(
+                ast.BinaryOp(
+                    ast.Identifier("a"),
+                    inequality,
+                    ast.Identifier("b")
+                ),
+                equality,
+                ast.Identifier("c")
+            )
+
+def test_equal_not_equal_inequalities_nested() -> None:
+    inequalities = ["<", "<=", ">", ">="]
+    equalities = ["==", "!="]
+    for equality in equalities:
+        for inequality in inequalities:
+            tokens = [
+                Token("a", "identifier", L),
+                Token(equality, "operator", L),
+                Token("b", "identifier", L),
+                Token(inequality, "operator", L),
+                Token("c", "identifier", L)
+            ]
+
+            assert(parse(tokens)) == ast.BinaryOp(
+                ast.Identifier("a"),
+                equality,
+                ast.BinaryOp(
+                    ast.Identifier("b"),
+                    inequality,
+                    ast.Identifier("c")
+                )
+            )
+
+def test_plus_minus_inequalities_nested() -> None:
+    inequalities = ["<", "<=", ">", ">="]
+    plus_minus = ["+", "-"]
+    for operator in plus_minus:
+        for inequality in inequalities:
+            tokens = [
+                Token("a", "identifier", L),
+                Token(operator, "operator", L),
+                Token("b", "identifier", L),
+                Token(inequality, "operator", L),
+                Token("c", "identifier", L)
+            ]
+
+            assert(parse(tokens)) == ast.BinaryOp(
+                ast.BinaryOp(
+                    ast.Identifier("a"),
+                    operator,
+                    ast.Identifier("b")
+                ),
+                inequality,
+                ast.Identifier("c")
+            )
+
+def test_inequalities_plus_minus_nested() -> None:
+    inequalities = ["<", "<=", ">", ">="]
+    plus_minus = ["+", "-"]
+    for inequality in inequalities:
+        for operator in plus_minus:
+            tokens = [
+                Token("a", "identifier", L),
+                Token(inequality, "operator", L),
+                Token("b", "identifier", L),
+                Token(operator, "operator", L),
+                Token("c", "identifier", L)
+            ]
+
+            assert(parse(tokens)) == ast.BinaryOp(
+                ast.Identifier("a"),
+                inequality,
+                ast.BinaryOp(
+                    ast.Identifier("b"),
+                    operator,
+                    ast.Identifier("c")
+                )
+            )
+
+def test_parse_unary() -> None:
+    operators = [Token('-', 'operator', L), Token('not', 'identifer', L)]
+    for operator in operators:
+        tokens = [
+            operator,
+            Token('a', 'identifier', L)
+        ]
+
+        assert(parse(tokens)) == ast.UnaryOp(
+            operator.text,
+            ast.Identifier('a')
+        )
+
+def test_parse_unary_nested() -> None:
+    operators = [Token('-', 'operator', L), Token('not', 'identifer', L)]
+    for operator1 in operators:
+        for operator2 in operators:
+            tokens = [
+                operator1,
+                operator2,
+                Token('a', 'identifier', L)
+            ]
+
+            assert(parse(tokens)) == ast.UnaryOp(
+                operator1.text,
+                ast.UnaryOp(
+                    operator2.text,
+                    ast.Identifier('a')
+                )
+            )
+        
+def test_multiplication_division_modulo_unary_nested() -> None:
+    operators1 = [Token('*', 'operator', L), Token('/', 'operator', L), Token('%', 'operator', L)]
+    operators2 = [Token('-', 'operator', L), Token('not', 'identifer', L)]
+    for operator1 in operators1:
+        for operator2 in operators2:
+            tokens = [
+                Token('a', 'identifier', L),
+                operator1,
+                operator2,
+                Token('b', 'identifier', L)
+            ]
+
+            assert(parse(tokens)) == ast.BinaryOp(
+                ast.Identifier('a'),
+                operator1.text,
+                ast.UnaryOp(
+                    operator2.text,
+                    ast.Identifier('b')
+                )
+            )
+
+def test_unary_multiplication_division_modulo_nested() -> None:
+    operators1 = [Token('-', 'operator', L), Token('not', 'identifer', L)]
+    operators2 = [Token('*', 'operator', L), Token('/', 'operator', L), Token('%', 'operator', L)]
+    for operator1 in operators1:
+        for operator2 in operators2:
+            tokens = [
+                operator1,
+                Token('a', 'identifier', L),
+                operator2,
+                Token('b', 'identifier', L)
+            ]
+
+            assert(parse(tokens)) == ast.BinaryOp(
+                ast.UnaryOp(
+                    operator1.text,
+                    ast.Identifier('a')
+                ),
+                operator2.text,
+                ast.Identifier('b'),
+            )
+
+def test_unary_expressions_nested() -> None:
+    operators = [Token('-', 'operator', L), Token('not', 'identifer', L)]
+    expressions = [
+        [Token('if', 'identifier', L), Token('a', 'identifier', L), Token('then', 'identifier', L), Token('b', 'identifier', L), Token('else', 'identifier', L), Token('c', 'identifier', L)]
+    ]
+
+    for operator in operators:
+        for expression in expressions:
+            tokens = [operator] + expression
+            assert(parse(tokens)) == ast.UnaryOp(
+                operator.text,
+                ast.IfClause(
+                    ast.Identifier(expression[1].text),
+                    ast.Identifier(expression[3].text),
+                    ast.Identifier(expression[5].text)
+                )
+            )
+
+def test_expressions_unary_nested() -> None:
+    operators = [Token('-', 'operator', L), Token('not', 'identifer', L)]
+    expressions = [
+        [Token('if', 'identifier', L), Token('a', 'identifier', L), Token('then', 'identifier', L), Token('b', 'identifier', L), Token('else', 'identifier', L), Token('c', 'identifier', L)]
+    ]
+    for expression in expressions:
+        for operator in operators:
+            tokens = expression[0:1] + [operator] + expression[1:3] + [operator] + expression[3:5] + [operator] + expression[5:6]
+            assert(parse(tokens)) == ast.IfClause(
+                    ast.UnaryOp(
+                        operator.text,
+                        ast.Identifier(expression[1].text),
+                    ),
+                    ast.UnaryOp(
+                        operator.text,
+                        ast.Identifier(expression[3].text),
+                    ),
+                    ast.UnaryOp(
+                        operator.text,
+                        ast.Identifier(expression[5].text),
+                    )
+             )
+            
