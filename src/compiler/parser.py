@@ -51,15 +51,8 @@ def parse(tokens: list[Token]) -> ast.Expression:
         token = consume()
         return ast.Literal(token.source, int(token.text))
     
-    def parse_bool_literal() -> ast.Literal:
-        match [peek().type, peek().text]:
-            case ["identifier", "true"]:
-                token = consume("true")
-            case ["identifier", "false"]:
-                token = consume("false")
-            case _:
-                raise Exception(f'{peek().source}: expected bool "true" or "false"')
-        
+    def parse_bool_literal(bool: str) -> ast.Literal:
+        token = consume(bool)
         return ast.Literal(token.source, token.text == "true")
 
     def parse_identifier() -> ast.Identifier:
@@ -74,27 +67,26 @@ def parse(tokens: list[Token]) -> ast.Expression:
         consume(')')
         return expr
 
-    def parse_if() -> ast.Conditional:
-        location = consume('if').source
-        condition = parse_expression_right_binary()
-        consume('then')
-        then = parse_expression_right_binary()
-        if peek().text == 'else':
-            consume('else')
-            return ast.Conditional(
-                location,
-                "if",
-                condition,
-                then,
-                parse_expression_right_binary()
-            )
+    def parse_conditional(operator: str) -> ast.Conditional:
+        location = consume(operator).source 
+        expr = ast.Conditional(
+            location,
+            operator,
+            parse_expression_right_binary(),
+            ast.Expression(L)
+        )
+        if operator == "if":
+            consume("then")
+            expr.first = parse_expression_right_binary()
+            if peek().text == "else":
+                consume("else")
+                expr.second = parse_expression_right_binary()
         else:
-            return ast.Conditional(
-                location,
-                "if",
-                condition,
-                then
-            )
+            consume("do")
+            expr.first = parse_expression_right_binary()
+
+        return expr
+
     def parse_list() -> list[ast.Expression]:
         expr = parse_expression_right_binary()
         if peek().text == ',':
@@ -146,10 +138,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
                         expr = parse_block()
             case "identifier":
                 match peek().text:
-                    case "if":
-                        expr = parse_if()
+                    case "if" | "while":
+                        expr = parse_conditional(peek().text)
                     case "true" | "false":
-                        expr = parse_bool_literal()
+                        expr = parse_bool_literal(peek().text)
                     case _:
                         expr = parse_identifier()
                         if peek().text == '(':
