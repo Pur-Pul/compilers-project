@@ -1246,7 +1246,7 @@ def test_block_if_then_blockA_b() -> None:
     ]
     assert(parse(tokens)) == ast.Block(L, 
         [ast.IfClause(L, 
-            ast.Identifier(L, "true"),
+            ast.Literal(L, True),
             ast.Block(L, 
                 [],
                 ast.Identifier(L, "a")
@@ -1270,7 +1270,7 @@ def test_block_if_then_blockA_semi_b() -> None:
     ]
     assert(parse(tokens)) == ast.Block(L, 
         [ast.IfClause(L, 
-            ast.Identifier(L, "true"),
+            ast.Literal(L, True),
             ast.Block(L, 
                 [],
                 ast.Identifier(L, "a")
@@ -1312,7 +1312,7 @@ def test_block_if_then_blockA_b_semi_c() -> None:
     ]
     assert(parse(tokens)) == ast.Block(L, 
         [ast.IfClause(L, 
-            ast.Identifier(L, "true"),
+            ast.Literal(L, True),
             ast.Block(L, 
                 [],
                 ast.Identifier(L, "a")
@@ -1340,7 +1340,7 @@ def test_block_if_then_blockA_else_blockB_c() -> None:
     ]
     assert(parse(tokens)) == ast.Block(L, 
         [ast.IfClause(L, 
-            ast.Identifier(L, "true"),
+            ast.Literal(L, True),
             ast.Block(L, 
                 [],
                 ast.Identifier(L, "a")

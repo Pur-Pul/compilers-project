@@ -51,6 +51,17 @@ def parse(tokens: list[Token]) -> ast.Expression:
         token = consume()
         return ast.Literal(token.source, int(token.text))
     
+    def parse_bool_literal() -> ast.Literal:
+        match [peek().type, peek().text]:
+            case ["identifier", "true"]:
+                token = consume("true")
+            case ["identifier", "false"]:
+                token = consume("false")
+            case _:
+                raise Exception(f'{peek().source}: expected bool "true" or "false"')
+        
+        return ast.Literal(token.source, token.text == "true")
+
     def parse_identifier() -> ast.Identifier:
         if peek().type != 'identifier':
             raise Exception(f'{peek().source}: expected an identifier')
@@ -123,23 +134,29 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return ast.Block(expr.location, [], expr)
 
     def parse_factor() -> ast.Expression:
-        print(peek().text)
-        if peek().text == '(':
-            return parse_parenthesized()
-        elif peek().text == "{":
-            return parse_block()
-        elif peek().text == 'if':
-            return parse_if()
+        expr = ast.Expression(L)
         match peek().type:
+            case "punctuation":
+                match peek().text:
+                    case "(":
+                        expr = parse_parenthesized()
+                    case "{":
+                        expr = parse_block()
+            case "identifier":
+                match peek().text:
+                    case "if":
+                        expr = parse_if()
+                    case "true" | "false":
+                        expr = parse_bool_literal()
+                    case _:
+                        expr = parse_identifier()
+                        if peek().text == '(':
+                            expr = parse_function(expr)
             case 'int_literal':
-                return parse_int_literal()
-            case 'identifier':
-                identifier = parse_identifier()
-                if peek().text == '(':
-                    return parse_function(identifier)
-                return identifier
+                expr = parse_int_literal()       
             case _:
                 raise Exception(f'{peek().source}: expected "(", an integer literal or an identifier')
+        return expr
 
     def parse_expression_unary(index: int = 0) -> ast.Expression:
         if index == len(unary_operators):
