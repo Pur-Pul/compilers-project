@@ -104,8 +104,15 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return ast.Block([], ast.Literal(None))
 
         expr = parse_top()
-        if peek().text == ';':
-            consume(';')
+        print(expr)
+        if (isinstance(expr, ast.Block) and expr.result == ast.Literal(None)):
+            block = parse_block(False)
+            block.expressions = expr.expressions + block.expressions
+            return block
+        elif isinstance(expr, ast.Block) and peek().text == "}":
+            consume("}")
+            return ast.Block([], expr)
+        elif isinstance(expr, ast.Block) or isinstance(expr, ast.IfClause):
             block = parse_block(False)
             block.expressions = [expr] + block.expressions
             return block
@@ -176,17 +183,26 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return left
     
     def parse_top() -> ast.Expression:
+        expr: ast.Expression = ast.Expression()
         if peek().text == "var":
             consume("var")
             left = parse_expression_left_binary()
-            return ast.UnaryOp(
+            expr =  ast.UnaryOp(
                 "var",
                 parse_assignment(left)
             )
         else:
-            return parse_expression_right_binary()
+            expr = parse_expression_right_binary()
+        if peek().text == ";":
+            consume(";")
+            expr = ast.Block(
+                [expr],
+                ast.Literal(None)
+            )
+        return expr
     
     main_expression = parse_top()
     if peek().type != "end":
         raise(Exception(f'{peek().source}: garbage at end of expression.'))
+    print(main_expression)
     return main_expression

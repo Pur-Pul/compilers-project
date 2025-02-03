@@ -1191,3 +1191,181 @@ def test_var_declaration_not_possible_outside_block_or_top() -> None:
     with pytest.raises(Exception) as e:
         parse(tokens)
     assert(e.value.args[0]) == ':0:0: garbage at end of expression.'
+
+def test_semicolons_are_optional_after_block() -> None:
+    tokens = [
+        Token("{", "punctuation", L),
+        Token("{", "punctuation", L),
+        Token("a", "identifier", L),
+        Token("}", "punctuation", L),
+        Token("{", "punctuation", L),
+        Token("b", "identifier", L),
+        Token("}", "punctuation", L),
+        Token("}", "punctuation", L)
+    ]
+    assert(parse(tokens)) == ast.Block(
+        [ast.Block(
+            [],
+            ast.Identifier("a")
+        )],
+        ast.Block(
+            [],
+            ast.Identifier("b")
+        )
+    )
+    
+    tokens = [
+        Token("{", "punctuation", L),
+        Token("{", "punctuation", L),
+        Token("a", "identifier", L),
+        Token("b", "identifier", L),
+        Token("}", "punctuation", L),
+        Token("}", "punctuation", L)
+    ]
+    with pytest.raises(Exception) as e:
+        parse(tokens)
+    assert(e.value.args[0]) == ':0:0: expected "}"'
+    tokens = [
+        Token("{", "punctuation", L),
+        Token("if", "identifier", L),
+        Token("true", "identifier", L),
+        Token("then", "identifier", L),
+        Token("{", "punctuation", L),
+        Token("a", "identifier", L),
+        Token("}", "punctuation", L),
+        Token("b", "identifier", L),
+        Token("}", "punctuation", L)
+    ]
+    assert(parse(tokens)) == ast.Block(
+        [ast.IfClause(
+            ast.Identifier("true"),
+            ast.Block(
+                [],
+                ast.Identifier("a")
+            ),
+        )],
+        ast.Identifier("b")
+    )
+    tokens = [
+        Token("{", "punctuation", L),
+        Token("if", "identifier", L),
+        Token("true", "identifier", L),
+        Token("then", "identifier", L),
+        Token("{", "punctuation", L),
+        Token("a", "identifier", L),
+        Token("}", "punctuation", L),
+        Token(";", "punctuation", L),
+        Token("b", "identifier", L),
+        Token("}", "punctuation", L)
+    ]
+    assert(parse(tokens)) == ast.Block(
+        [ast.IfClause(
+            ast.Identifier("true"),
+            ast.Block(
+                [],
+                ast.Identifier("a")
+            ),
+        )],
+        ast.Identifier("b")
+    )
+    tokens = [
+        Token("{", "punctuation", L),
+        Token("if", "identifier", L),
+        Token("true", "identifier", L),
+        Token("then", "identifier", L),
+        Token("{", "punctuation", L),
+        Token("a", "identifier", L),
+        Token("}", "punctuation", L),
+        Token("b", "identifier", L),
+        Token("c", "identifier", L),
+        Token("}", "punctuation", L)
+    ]
+    with pytest.raises(Exception) as e:
+        parse(tokens)
+    assert(e.value.args[0]) == ':0:0: expected "}"'
+    tokens = [
+        Token("{", "punctuation", L),
+        Token("if", "identifier", L),
+        Token("true", "identifier", L),
+        Token("then", "identifier", L),
+        Token("{", "punctuation", L),
+        Token("a", "identifier", L),
+        Token("}", "punctuation", L),
+        Token("b", "identifier", L),
+        Token(";", "punctuation", L),
+        Token("c", "identifier", L),
+        Token("}", "punctuation", L)
+    ]
+    assert(parse(tokens)) == ast.Block(
+        [ast.IfClause(
+            ast.Identifier("true"),
+            ast.Block(
+                [],
+                ast.Identifier("a")
+            )
+        ), ast.Identifier("b")
+        ],
+        ast.Identifier("c")
+    )
+    tokens = [
+        Token("{", "punctuation", L),
+        Token("if", "identifier", L),
+        Token("true", "identifier", L),
+        Token("then", "identifier", L),
+        Token("{", "punctuation", L),
+        Token("a", "identifier", L),
+        Token("}", "punctuation", L),
+        Token("else", "identifier", L),
+        Token("{", "punctuation", L),
+        Token("b", "identifier", L),
+        Token("}", "punctuation", L),
+        Token("c", "identifier", L),
+        Token("}", "punctuation", L)
+    ]
+    assert(parse(tokens)) == ast.Block(
+        [ast.IfClause(
+            ast.Identifier("true"),
+            ast.Block(
+                [],
+                ast.Identifier("a")
+            ),
+            ast.Block(
+                [],
+                ast.Identifier("b")
+            ),
+        )],
+        ast.Identifier("c")
+    )
+    tokens = [
+        Token("x", "identifier", L),
+        Token("=", "operator", L),
+        Token("{", "punctuation", L),
+            Token("{", "punctuation", L),
+                Token("f", "identifier", L),
+                Token("(", "punctuation", L),
+                Token("a", "identifier", L),
+                Token(")", "punctuation", L),
+            Token("}", "punctuation", L),
+            Token("{", "punctuation", L),
+                Token("b", "identifier", L),
+            Token("}", "punctuation", L),
+        Token("}", "punctuation", L)
+    ]
+
+    assert(parse(tokens)) == ast.Assignment(
+        ast.Identifier('x'),
+        '=',
+        ast.Block(
+            [ast.Block(
+                [],
+                ast.FunctionCall(
+                    ast.Identifier('f'),
+                    [ast.Identifier('a')]
+                )
+            )],
+            ast.Block(
+                [],
+                ast.Identifier('b')
+            )
+        )
+    )
