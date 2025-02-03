@@ -170,10 +170,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
             )
         return left
 
-    def parse_assignment(left : ast.Expression) -> ast.Assignment:
+    def parse_assignment(left : ast.Expression) -> ast.BinaryOp:
         location = consume("=").source
         right = parse_expression_right_binary()
-        return ast.Assignment(
+        return ast.BinaryOp(
             location,
             left,
             "=",

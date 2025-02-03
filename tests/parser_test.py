@@ -434,7 +434,7 @@ def test_assignment() -> None:
         Token("b", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.Assignment(L, 
+    assert(parse(tokens)) == ast.BinaryOp(L, 
         ast.Identifier(L, "a"),
         "=",
         ast.Identifier(L, "b")
@@ -449,10 +449,10 @@ def test_nested_assignments() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.Assignment(L, 
+    assert(parse(tokens)) == ast.BinaryOp(L, 
         ast.Identifier(L, "a"),
         "=",
-        ast.Assignment(L, 
+        ast.BinaryOp(L, 
             ast.Identifier(L, "b"),
             "=",
             ast.Identifier(L, "c")
@@ -470,10 +470,10 @@ def test_nested_assignments_with_operations() -> None:
         Token("d", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.Assignment(L, 
+    assert(parse(tokens)) == ast.BinaryOp(L, 
         ast.Identifier(L, "a"),
         "=",
-        ast.Assignment(L, 
+        ast.BinaryOp(L, 
             ast.BinaryOp(L, 
                 ast.Identifier(L, "b"),
                 "+",
@@ -1058,7 +1058,7 @@ def test_expression_parse_block_expression_nested() -> None:
         [Token('if', 'identifier', L), Token('a', 'identifier', L), Token('then', 'identifier', L), Token('b', 'identifier', L), Token('else', 'identifier', L), Token('c', 'identifier', L)]
     ]
     tokens = [Token('z', 'identifier', L), Token('=', 'operator', L)] + [Token("{", "punctuation", L)] + expressions[0] + [Token(";", "punctuation", L)] + expressions[1] + [Token(";", "punctuation", L)] + [Token("}", "punctuation", L)]
-    assert(parse(tokens)) == ast.Assignment(L, 
+    assert(parse(tokens)) == ast.BinaryOp(L, 
         ast.Identifier(L, 'z'),
         '=',
         ast.Block(L, 
@@ -1114,7 +1114,7 @@ def test_var_declaration_possible_in_top() -> None:
 
     assert(parse(tokens)) == ast.UnaryOp(L, 
         "var",
-        ast.Assignment(L, 
+        ast.BinaryOp(L, 
             ast.Identifier(L, "a"),
             "=",
             ast.Identifier(L, "b")
@@ -1143,7 +1143,7 @@ def test_var_declaration_possible_in_block() -> None:
         )],
         ast.UnaryOp(L, 
             "var",
-            ast.Assignment(L, 
+            ast.BinaryOp(L, 
                 ast.Identifier(L, "a"),
                 "=",
                 ast.Identifier(L, "b")
@@ -1370,7 +1370,7 @@ def test_x_assign_block_blockFunction_blockB() -> None:
         Token("}", "punctuation", L)
     ]
 
-    assert(parse(tokens)) == ast.Assignment(L, 
+    assert(parse(tokens)) == ast.BinaryOp(L, 
         ast.Identifier(L, 'x'),
         '=',
         ast.Block(L, 
