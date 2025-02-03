@@ -1084,3 +1084,110 @@ def test_block_missing_semicolon_fails_gracefully() -> None:
     with pytest.raises(Exception) as e:
         parse(tokens)
     assert(e.value.args[0]) == ':0:0: expected "}"'
+
+def test_block_missing_end_bracket_fails_gracefully() -> None:
+    tokens = [
+        Token("{", "punctuation", L),
+        Token("a", "identifier", L),
+        Token(";", "punctuation", L),
+        Token("b", "identifier", L),
+        Token(";", "punctuation", L),
+        Token("c", "identifier", L),
+    ]
+
+    with pytest.raises(Exception) as e:
+        parse(tokens)
+    assert(e.value.args[0]) == ':0:0: expected "}"'
+
+def test_var_declaration_possible_in_top() -> None:
+    tokens = [
+        Token("var", "identifier", L),
+        Token("a", "identifier", L),
+        Token("=", "operator", L),
+        Token("b", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.UnaryOp(
+        "var",
+        ast.Assignment(
+            ast.Identifier("a"),
+            "=",
+            ast.Identifier("b")
+        )
+    )
+
+def test_var_declaration_possible_in_block() -> None:
+    tokens = [
+        Token("{", "punctuation", L),
+        Token("1", "int_literal", L),
+        Token("+", "operator", L),
+        Token("2", "int_literal", L),
+        Token(";", "punctuation", L),
+        Token("var", "identifier", L),
+        Token("a", "identifier", L),
+        Token("=", "operator", L),
+        Token("b", "identifier", L),
+        Token("}", "punctuation", L)
+    ]
+
+    assert(parse(tokens)) == ast.Block(
+        [ast.BinaryOp(
+            ast.Literal(1),
+            '+',
+            ast.Literal(2)
+        )],
+        ast.UnaryOp(
+            "var",
+            ast.Assignment(
+                ast.Identifier("a"),
+                "=",
+                ast.Identifier("b")
+            )
+        )
+    )
+
+def test_var_declaration_not_possible_outside_block_or_top() -> None:
+    tokens = [
+        Token("if", "identifier", L),
+        Token("true", "identifier", L),
+        Token("then", "identifer", L),
+        Token("var", "identifier", L),
+        Token("a", "identifier", L),
+        Token("=", "operator", L),
+        Token("b", "identifier", L)
+    ]
+    with pytest.raises(Exception) as e:
+        parse(tokens)
+    assert(e.value.args[0]) == ':0:0: garbage at end of expression.'
+    tokens = [
+        Token("1", "identifier", L),
+        Token("+", "identifier", L),
+        Token("var", "identifier", L),
+        Token("a", "identifier", L),
+        Token("=", "operator", L),
+        Token("b", "identifier", L)
+    ]
+    with pytest.raises(Exception) as e:
+        parse(tokens)
+    assert(e.value.args[0]) == ':0:0: garbage at end of expression.'
+    tokens = [
+        Token("not", "identifier", L),
+        Token("var", "identifier", L),
+        Token("a", "identifier", L),
+        Token("=", "operator", L),
+        Token("b", "identifier", L)
+    ]
+    with pytest.raises(Exception) as e:
+        parse(tokens)
+    assert(e.value.args[0]) == ':0:0: garbage at end of expression.'
+    tokens = [
+        Token("c", "identifier", L),
+        Token("=", "operator", L),
+        Token("var", "identifier", L),
+        Token("a", "identifier", L),
+        Token("=", "operator", L),
+        Token("b", "identifier", L)
+    ]
+    with pytest.raises(Exception) as e:
+        parse(tokens)
+    assert(e.value.args[0]) == ':0:0: garbage at end of expression.'

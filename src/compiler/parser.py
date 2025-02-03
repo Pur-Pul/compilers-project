@@ -103,7 +103,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
             consume('}')
             return ast.Block([], ast.Literal(None))
 
-        expr = parse_expression_right_binary()
+        expr = parse_top()
         if peek().text == ';':
             consume(';')
             block = parse_block(False)
@@ -159,23 +159,34 @@ def parse(tokens: list[Token]) -> ast.Expression:
             )
         return left
 
-    def parse_expression_right_binary(index: int = 0) -> ast.Expression:
-        if index == len(right_associative_binary_operators):
-            return parse_expression_left_binary()
+    def parse_assignment(left : ast.Expression) -> ast.Assignment:
+        consume("=")
+        right = parse_expression_right_binary()
+        return ast.Assignment(
+            left,
+            "=",
+            right
+        )
 
-        left = parse_expression_right_binary(index+1)
-        if peek().text in right_associative_binary_operators[index]:
-            operator_token = consume()
-            right = parse_expression_right_binary()
-            return ast.Assignment(
-                left,
-                operator_token.text,
-                right
-            )
+    def parse_expression_right_binary() -> ast.Expression:
+        left = parse_expression_left_binary()
+        if peek().text == '=':
+            return parse_assignment(left)
         else:
             return left
     
-    main_expression = parse_expression_right_binary()
+    def parse_top() -> ast.Expression:
+        if peek().text == "var":
+            consume("var")
+            left = parse_expression_left_binary()
+            return ast.UnaryOp(
+                "var",
+                parse_assignment(left)
+            )
+        else:
+            return parse_expression_right_binary()
+    
+    main_expression = parse_top()
     if peek().type != "end":
         raise(Exception(f'{peek().source}: garbage at end of expression.'))
     return main_expression
