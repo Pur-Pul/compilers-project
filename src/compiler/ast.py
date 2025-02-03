@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from typing import Optional
+from compiler.tokenizer import Source, L
 @dataclass
 class Expression:
     """Base class for AST nodes representing expressions."""
+    location: Source
 
 @dataclass
 class Literal(Expression):

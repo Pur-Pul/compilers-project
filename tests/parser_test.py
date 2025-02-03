@@ -5,7 +5,12 @@ import compiler.ast as ast
 
 def test_parse_one_identifier() -> None:
     tokens = [Token("first", "identifier", L)]
-    assert(parse(tokens)) == ast.Identifier("first")
+    assert(parse(tokens)) == ast.Identifier(L, "first")
+
+def test_expression_contains_location_of_the_first_token() -> None:
+    l = Source('', 1, 2)
+    tokens = [Token("first", "identifier", l)]
+    assert(parse(tokens)) == ast.Identifier(l, "first")
 
 def test_parse_multiple_identifiers_fails() -> None:
     tokens = [Token("first", "identifier", Source("filename",5,5)),Token("second", "identifier", Source("filename",5,11))]
@@ -15,7 +20,7 @@ def test_parse_multiple_identifiers_fails() -> None:
 
 def test_parse_one_int_literal() -> None:
     tokens = [Token("1", "int_literal", L)]
-    assert(parse(tokens)) == ast.Literal(1)
+    assert(parse(tokens)) == ast.Literal(L, 1)
 
 def test_parse_multiple_literals_fails() -> None:
     tokens = [Token("1", "int_literal", Source("filename",5,5)),Token("2", "int_literal", Source("filename",5,7))]
@@ -31,10 +36,10 @@ def test_parse_plus_minus() -> None:
             Token(operator, "operation", L),
             Token("2", "int_literal", L)
         ]
-        assert(parse(tokens)) == ast.BinaryOp(
-            ast.Literal(1),
+        assert(parse(tokens)) == ast.BinaryOp(L, 
+            ast.Literal(L, 1),
             operator,
-            ast.Literal(2)
+            ast.Literal(L, 2)
         )
 
 def test_parse_multiplication_division_modulo() -> None:
@@ -44,10 +49,10 @@ def test_parse_multiplication_division_modulo() -> None:
             Token("1", "int_literal", L),
             Token(operator, "operation", L),
             Token("2", "int_literal", L)]
-        assert(parse(tokens)) == ast.BinaryOp(
-            ast.Literal(1),
+        assert(parse(tokens)) == ast.BinaryOp(L, 
+            ast.Literal(L, 1),
             operator,
-            ast.Literal(2)
+            ast.Literal(L, 2)
         )
 
 def test_plus_minus_nested() -> None:
@@ -61,14 +66,14 @@ def test_plus_minus_nested() -> None:
                 Token(operator2, "operation", L),
                 Token("3", "int_literal", L)
             ]
-            assert(parse(tokens)) == ast.BinaryOp(
-                ast.BinaryOp(
-                    ast.Literal(1),
+            assert(parse(tokens)) == ast.BinaryOp(L, 
+                ast.BinaryOp(L, 
+                    ast.Literal(L, 1),
                     operator1,
-                    ast.Literal(2)
+                    ast.Literal(L, 2)
                 ),
                 operator2,
-                ast.Literal(3)
+                ast.Literal(L, 3)
             )
 
 def test_multiplication_division_modulo_plus_minus_nested() -> None:
@@ -83,14 +88,14 @@ def test_multiplication_division_modulo_plus_minus_nested() -> None:
                 Token(operator2, "operation", L),
                 Token("3", "int_literal", L)
             ]
-            assert(parse(tokens)) == ast.BinaryOp(
-                ast.BinaryOp(
-                    ast.Literal(1),
+            assert(parse(tokens)) == ast.BinaryOp(L, 
+                ast.BinaryOp(L, 
+                    ast.Literal(L, 1),
                     operator1,
-                    ast.Literal(2)
+                    ast.Literal(L, 2)
                 ),
                 operator2,
-                ast.Literal(3)
+                ast.Literal(L, 3)
                 
             )
 
@@ -106,13 +111,13 @@ def test_plus_minus_multiplication_division_modulo_nested() -> None:
                 Token(operator2, "operation", L),
                 Token("3", "int_literal", L)
             ]
-            assert(parse(tokens)) == ast.BinaryOp(
-                ast.Literal(1),
+            assert(parse(tokens)) == ast.BinaryOp(L, 
+                ast.Literal(L, 1),
                 operator1,
-                ast.BinaryOp(
-                    ast.Literal(2),
+                ast.BinaryOp(L, 
+                    ast.Literal(L, 2),
                     operator2,
-                    ast.Literal(3)
+                    ast.Literal(L, 3)
                 )
                 
             )
@@ -124,11 +129,11 @@ def test_empty_tokens_fails_gracefully() -> None:
 
 def test_if_identifier_then_identifier() -> None:
     tokens = [Token("if", "identifier", L), Token("something", "identifier", L), Token("then", "identifier", L), Token("somethingElse", "identifier", L)]
-    assert(parse(tokens)) == ast.IfClause(ast.Identifier("something"),ast.Identifier("somethingElse"))
+    assert(parse(tokens)) == ast.IfClause(L, ast.Identifier(L, "something"),ast.Identifier(L, "somethingElse"))
 
 def test_if_identifier_then_identifier_else_identifier() -> None:
     tokens = [Token("if", "identifier", L), Token("something", "identifier", L), Token("then", "identifier", L), Token("somethingElse", "identifier", L), Token("else", "identifier", L), Token("somethingThird", "identifier", L)]
-    assert(parse(tokens)) == ast.IfClause(ast.Identifier("something"),ast.Identifier("somethingElse"),ast.Identifier("somethingThird"))
+    assert(parse(tokens)) == ast.IfClause(L, ast.Identifier(L, "something"),ast.Identifier(L, "somethingElse"),ast.Identifier(L, "somethingThird"))
 
 def test_if_else_nested() -> None:
     tokens = [
@@ -144,14 +149,14 @@ def test_if_else_nested() -> None:
         Token("else", "identifier", L),
         Token("dosomething", "identifier", L)
     ]
-    assert(parse(tokens)) == ast.IfClause(
-        ast.Identifier("something"),
-        ast.IfClause(
-            ast.Identifier("somethingElse"),
-            ast.Identifier("do"),
-            ast.Identifier("doNot"),
+    assert(parse(tokens)) == ast.IfClause(L, 
+        ast.Identifier(L, "something"),
+        ast.IfClause(L, 
+            ast.Identifier(L, "somethingElse"),
+            ast.Identifier(L, "do"),
+            ast.Identifier(L, "doNot"),
         ),
-        ast.Identifier("dosomething")
+        ast.Identifier(L, "dosomething")
     )
 
 def test_if_else_nested_with_operations() -> None:
@@ -193,44 +198,44 @@ def test_if_else_nested_with_operations() -> None:
             Token("/", "operator", L),
             Token("4", "int_literal", L),
     ]
-    assert(parse(tokens)) == ast.IfClause(
-        ast.BinaryOp(
-            ast.Literal(5),
+    assert(parse(tokens)) == ast.IfClause(L, 
+        ast.BinaryOp(L, 
+            ast.Literal(L, 5),
             '-',
-            ast.Literal(4)
+            ast.Literal(L, 4)
         ),
-        ast.IfClause(
-            ast.BinaryOp(
-                ast.Identifier('a'),
+        ast.IfClause(L, 
+            ast.BinaryOp(L, 
+                ast.Identifier(L, 'a'),
                 '+',
-                ast.Identifier('b')
+                ast.Identifier(L, 'b')
             ),
-            ast.BinaryOp(
-                ast.Literal(1),
+            ast.BinaryOp(L, 
+                ast.Literal(L, 1),
                 '+',
-                ast.Literal(2)
+                ast.Literal(L, 2)
             ),
-            ast.BinaryOp(
-                ast.Literal(5),
+            ast.BinaryOp(L, 
+                ast.Literal(L, 5),
                 '*',
-                ast.Literal(3)
+                ast.Literal(L, 3)
             ),
         ),
-        ast.IfClause(
-            ast.BinaryOp(
-                ast.Identifier('d'),
+        ast.IfClause(L, 
+            ast.BinaryOp(L, 
+                ast.Identifier(L, 'd'),
                 '*',
-                ast.Identifier('c')
+                ast.Identifier(L, 'c')
             ),
-            ast.BinaryOp(
-                ast.Literal(6),
+            ast.BinaryOp(L, 
+                ast.Literal(L, 6),
                 '-',
-                ast.Literal(10)
+                ast.Literal(L, 10)
             ),
-            ast.BinaryOp(
-                ast.Literal(8),
+            ast.BinaryOp(L, 
+                ast.Literal(L, 8),
                 '/',
-                ast.Literal(4)
+                ast.Literal(L, 4)
             ),
         ),
     )
@@ -248,17 +253,17 @@ def test_if_else_in_operation() -> None:
         Token("else", "identfier", L),
             Token("2", "int_literal", L)
     ]
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.Literal(1),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.Literal(L, 1),
         '+',
-        ast.IfClause(
-            ast.BinaryOp(
-                ast.Literal(5),
+        ast.IfClause(L, 
+            ast.BinaryOp(L, 
+                ast.Literal(L, 5),
                 '-',
-                ast.Literal(4),
+                ast.Literal(L, 4),
             ),
-            ast.Literal(1),
-            ast.Literal(2)
+            ast.Literal(L, 1),
+            ast.Literal(L, 2)
         )
         
     )
@@ -293,9 +298,9 @@ def test_function_with_identifier() -> None:
         Token("a", "identifier", L),
         Token(")", "punctuation", L)
     ]
-    assert(parse(tokens)) == ast.FunctionCall(
-        ast.Identifier('f'),
-        [ast.Identifier('a')]
+    assert(parse(tokens)) == ast.FunctionCall(L, 
+        ast.Identifier(L, 'f'),
+        [ast.Identifier(L, 'a')]
     )
 
 def test_function_with_two_identifiers() -> None:
@@ -307,11 +312,11 @@ def test_function_with_two_identifiers() -> None:
         Token("b", "identifier", L),
         Token(")", "punctuation", L)
     ]
-    assert(parse(tokens)) == ast.FunctionCall(
-        ast.Identifier('f'),
+    assert(parse(tokens)) == ast.FunctionCall(L, 
+        ast.Identifier(L, 'f'),
         [
-            ast.Identifier('a'),
-            ast.Identifier('b')
+            ast.Identifier(L, 'a'),
+            ast.Identifier(L, 'b')
         ]
     )
 
@@ -340,19 +345,19 @@ def test_function_with_ten_identifiers() -> None:
         Token("j", "identifier", L),
         Token(")", "punctuation", L)
     ]
-    assert(parse(tokens)) == ast.FunctionCall(
-        ast.Identifier('f'),
+    assert(parse(tokens)) == ast.FunctionCall(L, 
+        ast.Identifier(L, 'f'),
         [
-            ast.Identifier('a'),
-            ast.Identifier('b'),
-            ast.Identifier('c'),
-            ast.Identifier('d'),
-            ast.Identifier('e'),
-            ast.Identifier('f'),
-            ast.Identifier('g'),
-            ast.Identifier('h'),
-            ast.Identifier('i'),
-            ast.Identifier('j'),
+            ast.Identifier(L, 'a'),
+            ast.Identifier(L, 'b'),
+            ast.Identifier(L, 'c'),
+            ast.Identifier(L, 'd'),
+            ast.Identifier(L, 'e'),
+            ast.Identifier(L, 'f'),
+            ast.Identifier(L, 'g'),
+            ast.Identifier(L, 'h'),
+            ast.Identifier(L, 'i'),
+            ast.Identifier(L, 'j'),
         ]
     )
 
@@ -367,14 +372,14 @@ def test_function_with_identifier_and_operation() -> None:
         Token("2", "int_literal", L),
         Token(")", "punctuation", L)
     ]
-    assert(parse(tokens)) == ast.FunctionCall(
-        ast.Identifier('f'),
+    assert(parse(tokens)) == ast.FunctionCall(L, 
+        ast.Identifier(L, 'f'),
         [
-            ast.Identifier('a'),
-            ast.BinaryOp(
-                ast.Literal(1),
+            ast.Identifier(L, 'a'),
+            ast.BinaryOp(L, 
+                ast.Literal(L, 1),
                 "+",
-                ast.Literal(2)
+                ast.Literal(L, 2)
             )
         ]
     )
@@ -402,21 +407,21 @@ def test_function_with_nested_functions() -> None:
 
         Token(")", "punctuation", L)
     ]
-    assert(parse(tokens)) == ast.FunctionCall(
-        ast.Identifier('f'),
+    assert(parse(tokens)) == ast.FunctionCall(L, 
+        ast.Identifier(L, 'f'),
         [
-            ast.FunctionCall(
-                ast.Identifier('g'),
+            ast.FunctionCall(L, 
+                ast.Identifier(L, 'g'),
                 [
-                    ast.Literal(1),
-                    ast.Literal(2)
+                    ast.Literal(L, 1),
+                    ast.Literal(L, 2)
                 ]
             ),
-            ast.FunctionCall(
-                ast.Identifier('h'),
+            ast.FunctionCall(L, 
+                ast.Identifier(L, 'h'),
                 [
-                    ast.Identifier('a'),
-                    ast.Identifier('b')
+                    ast.Identifier(L, 'a'),
+                    ast.Identifier(L, 'b')
                 ]
             )
         ]
@@ -429,10 +434,10 @@ def test_assignment() -> None:
         Token("b", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.Assignment(
-        ast.Identifier("a"),
+    assert(parse(tokens)) == ast.Assignment(L, 
+        ast.Identifier(L, "a"),
         "=",
-        ast.Identifier("b")
+        ast.Identifier(L, "b")
     )
 
 def test_nested_assignments() -> None:
@@ -444,13 +449,13 @@ def test_nested_assignments() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.Assignment(
-        ast.Identifier("a"),
+    assert(parse(tokens)) == ast.Assignment(L, 
+        ast.Identifier(L, "a"),
         "=",
-        ast.Assignment(
-            ast.Identifier("b"),
+        ast.Assignment(L, 
+            ast.Identifier(L, "b"),
             "=",
-            ast.Identifier("c")
+            ast.Identifier(L, "c")
         )
     )
 
@@ -465,17 +470,17 @@ def test_nested_assignments_with_operations() -> None:
         Token("d", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.Assignment(
-        ast.Identifier("a"),
+    assert(parse(tokens)) == ast.Assignment(L, 
+        ast.Identifier(L, "a"),
         "=",
-        ast.Assignment(
-            ast.BinaryOp(
-                ast.Identifier("b"),
+        ast.Assignment(L, 
+            ast.BinaryOp(L, 
+                ast.Identifier(L, "b"),
                 "+",
-                ast.Identifier("c")
+                ast.Identifier(L, "c")
             ),
             "=",
-            ast.Identifier("d")
+            ast.Identifier(L, "d")
         )
     )
 
@@ -486,10 +491,10 @@ def test_or() -> None:
         Token("b", "identifier", L),
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.Identifier(L, "a"),
         "or",
-        ast.Identifier("b")
+        ast.Identifier(L, "b")
     )
 
 def test_ors_nested() -> None:
@@ -501,14 +506,14 @@ def test_ors_nested() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.BinaryOp(
-            ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.BinaryOp(L, 
+            ast.Identifier(L, "a"),
             "or",
-            ast.Identifier("b")
+            ast.Identifier(L, "b")
         ),
         "or",
-        ast.Identifier("c")
+        ast.Identifier(L, "c")
     )
 
 def test_and() ->None:
@@ -518,10 +523,10 @@ def test_and() ->None:
         Token("b", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.Identifier(L, "a"),
         "and",
-        ast.Identifier("b")
+        ast.Identifier(L, "b")
     )
 
 def test_ands_nested() -> None:
@@ -533,14 +538,14 @@ def test_ands_nested() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.BinaryOp(
-            ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.BinaryOp(L, 
+            ast.Identifier(L, "a"),
             "and",
-            ast.Identifier("b")
+            ast.Identifier(L, "b")
         ),
         "and",
-        ast.Identifier("c")
+        ast.Identifier(L, "c")
     )
 
 def test_and_or_nested() -> None:
@@ -552,14 +557,14 @@ def test_and_or_nested() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.BinaryOp(
-            ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.BinaryOp(L, 
+            ast.Identifier(L, "a"),
             "and",
-            ast.Identifier("b")
+            ast.Identifier(L, "b")
         ),
         "or",
-        ast.Identifier("c")
+        ast.Identifier(L, "c")
     )
 
 def test_or_and_nested() -> None:
@@ -571,13 +576,13 @@ def test_or_and_nested() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.Identifier(L, "a"),
         "or",
-        ast.BinaryOp(
-            ast.Identifier("b"),
+        ast.BinaryOp(L, 
+            ast.Identifier(L, "b"),
             "and",
-            ast.Identifier("c")
+            ast.Identifier(L, "c")
         )
     )
 
@@ -588,10 +593,10 @@ def test_equal_and_not_equal() ->None:
         Token("b", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.Identifier(L, "a"),
         "==",
-        ast.Identifier("b")
+        ast.Identifier(L, "b")
     )
 
     tokens = [
@@ -600,10 +605,10 @@ def test_equal_and_not_equal() ->None:
         Token("b", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.Identifier(L, "a"),
         "!=",
-        ast.Identifier("b")
+        ast.Identifier(L, "b")
     )
 
 def test_equal_and_not_equal_nested() -> None:
@@ -615,14 +620,14 @@ def test_equal_and_not_equal_nested() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.BinaryOp(
-            ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.BinaryOp(L, 
+            ast.Identifier(L, "a"),
             "==",
-            ast.Identifier("b")
+            ast.Identifier(L, "b")
         ),
         "==",
-        ast.Identifier("c")
+        ast.Identifier(L, "c")
     )
 
     tokens = [
@@ -633,14 +638,14 @@ def test_equal_and_not_equal_nested() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.BinaryOp(
-            ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.BinaryOp(L, 
+            ast.Identifier(L, "a"),
             "==",
-            ast.Identifier("b")
+            ast.Identifier(L, "b")
         ),
         "!=",
-        ast.Identifier("c")
+        ast.Identifier(L, "c")
     )
 
     tokens = [
@@ -651,14 +656,14 @@ def test_equal_and_not_equal_nested() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.BinaryOp(
-            ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.BinaryOp(L, 
+            ast.Identifier(L, "a"),
             "!=",
-            ast.Identifier("b")
+            ast.Identifier(L, "b")
         ),
         "==",
-        ast.Identifier("c")
+        ast.Identifier(L, "c")
     )
 
 def test_equal_notequal_and_nested() -> None:
@@ -670,14 +675,14 @@ def test_equal_notequal_and_nested() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.BinaryOp(
-            ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.BinaryOp(L, 
+            ast.Identifier(L, "a"),
             "==",
-            ast.Identifier("b")
+            ast.Identifier(L, "b")
         ),
         "and",
-        ast.Identifier("c")
+        ast.Identifier(L, "c")
     )
 
     tokens = [
@@ -688,14 +693,14 @@ def test_equal_notequal_and_nested() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.BinaryOp(
-            ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.BinaryOp(L, 
+            ast.Identifier(L, "a"),
             "!=",
-            ast.Identifier("b")
+            ast.Identifier(L, "b")
         ),
         "and",
-        ast.Identifier("c")
+        ast.Identifier(L, "c")
     )
 
 def test_and_equal_not_equal_nested() -> None:
@@ -707,13 +712,13 @@ def test_and_equal_not_equal_nested() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.Identifier(L, "a"),
         "and",
-        ast.BinaryOp(
-            ast.Identifier("b"),
+        ast.BinaryOp(L, 
+            ast.Identifier(L, "b"),
             "==",
-            ast.Identifier("c")
+            ast.Identifier(L, "c")
         )
     )
 
@@ -725,13 +730,13 @@ def test_and_equal_not_equal_nested() -> None:
         Token("c", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.BinaryOp(
-        ast.Identifier("a"),
+    assert(parse(tokens)) == ast.BinaryOp(L, 
+        ast.Identifier(L, "a"),
         "and",
-        ast.BinaryOp(
-            ast.Identifier("b"),
+        ast.BinaryOp(L, 
+            ast.Identifier(L, "b"),
             "!=",
-            ast.Identifier("c")
+            ast.Identifier(L, "c")
         )
     )
 
@@ -744,10 +749,10 @@ def test_inequalities() -> None:
             Token("b", "identifier", L)
         ]
 
-        assert(parse(tokens)) == ast.BinaryOp(
-            ast.Identifier("a"),
+        assert(parse(tokens)) == ast.BinaryOp(L, 
+            ast.Identifier(L, "a"),
             inequality,
-            ast.Identifier("b")
+            ast.Identifier(L, "b")
         )
 
 def test_inequalities_nested() -> None:
@@ -762,14 +767,14 @@ def test_inequalities_nested() -> None:
                 Token("c", "identifier", L)
             ]
 
-            assert(parse(tokens)) == ast.BinaryOp(
-                ast.BinaryOp(
-                    ast.Identifier("a"),
+            assert(parse(tokens)) == ast.BinaryOp(L, 
+                ast.BinaryOp(L, 
+                    ast.Identifier(L, "a"),
                     inequality1,
-                    ast.Identifier("b")
+                    ast.Identifier(L, "b")
                 ),
                 inequality2,
-                ast.Identifier("c")
+                ast.Identifier(L, "c")
             )
 
 def test_inequalities_equal_not_equal_nested() -> None:
@@ -785,14 +790,14 @@ def test_inequalities_equal_not_equal_nested() -> None:
                 Token("c", "identifier", L)
             ]
 
-            assert(parse(tokens)) == ast.BinaryOp(
-                ast.BinaryOp(
-                    ast.Identifier("a"),
+            assert(parse(tokens)) == ast.BinaryOp(L, 
+                ast.BinaryOp(L, 
+                    ast.Identifier(L, "a"),
                     inequality,
-                    ast.Identifier("b")
+                    ast.Identifier(L, "b")
                 ),
                 equality,
-                ast.Identifier("c")
+                ast.Identifier(L, "c")
             )
 
 def test_equal_not_equal_inequalities_nested() -> None:
@@ -808,13 +813,13 @@ def test_equal_not_equal_inequalities_nested() -> None:
                 Token("c", "identifier", L)
             ]
 
-            assert(parse(tokens)) == ast.BinaryOp(
-                ast.Identifier("a"),
+            assert(parse(tokens)) == ast.BinaryOp(L, 
+                ast.Identifier(L, "a"),
                 equality,
-                ast.BinaryOp(
-                    ast.Identifier("b"),
+                ast.BinaryOp(L, 
+                    ast.Identifier(L, "b"),
                     inequality,
-                    ast.Identifier("c")
+                    ast.Identifier(L, "c")
                 )
             )
 
@@ -831,14 +836,14 @@ def test_plus_minus_inequalities_nested() -> None:
                 Token("c", "identifier", L)
             ]
 
-            assert(parse(tokens)) == ast.BinaryOp(
-                ast.BinaryOp(
-                    ast.Identifier("a"),
+            assert(parse(tokens)) == ast.BinaryOp(L, 
+                ast.BinaryOp(L, 
+                    ast.Identifier(L, "a"),
                     operator,
-                    ast.Identifier("b")
+                    ast.Identifier(L, "b")
                 ),
                 inequality,
-                ast.Identifier("c")
+                ast.Identifier(L, "c")
             )
 
 def test_inequalities_plus_minus_nested() -> None:
@@ -854,13 +859,13 @@ def test_inequalities_plus_minus_nested() -> None:
                 Token("c", "identifier", L)
             ]
 
-            assert(parse(tokens)) == ast.BinaryOp(
-                ast.Identifier("a"),
+            assert(parse(tokens)) == ast.BinaryOp(L, 
+                ast.Identifier(L, "a"),
                 inequality,
-                ast.BinaryOp(
-                    ast.Identifier("b"),
+                ast.BinaryOp(L, 
+                    ast.Identifier(L, "b"),
                     operator,
-                    ast.Identifier("c")
+                    ast.Identifier(L, "c")
                 )
             )
 
@@ -872,9 +877,9 @@ def test_parse_unary() -> None:
             Token('a', 'identifier', L)
         ]
 
-        assert(parse(tokens)) == ast.UnaryOp(
+        assert(parse(tokens)) == ast.UnaryOp(L, 
             operator.text,
-            ast.Identifier('a')
+            ast.Identifier(L, 'a')
         )
 
 def test_parse_unary_nested() -> None:
@@ -887,11 +892,11 @@ def test_parse_unary_nested() -> None:
                 Token('a', 'identifier', L)
             ]
 
-            assert(parse(tokens)) == ast.UnaryOp(
+            assert(parse(tokens)) == ast.UnaryOp(L, 
                 operator1.text,
-                ast.UnaryOp(
+                ast.UnaryOp(L, 
                     operator2.text,
-                    ast.Identifier('a')
+                    ast.Identifier(L, 'a')
                 )
             )
         
@@ -907,12 +912,12 @@ def test_multiplication_division_modulo_unary_nested() -> None:
                 Token('b', 'identifier', L)
             ]
 
-            assert(parse(tokens)) == ast.BinaryOp(
-                ast.Identifier('a'),
+            assert(parse(tokens)) == ast.BinaryOp(L, 
+                ast.Identifier(L, 'a'),
                 operator1.text,
-                ast.UnaryOp(
+                ast.UnaryOp(L, 
                     operator2.text,
-                    ast.Identifier('b')
+                    ast.Identifier(L, 'b')
                 )
             )
 
@@ -928,13 +933,13 @@ def test_unary_multiplication_division_modulo_nested() -> None:
                 Token('b', 'identifier', L)
             ]
 
-            assert(parse(tokens)) == ast.BinaryOp(
-                ast.UnaryOp(
+            assert(parse(tokens)) == ast.BinaryOp(L, 
+                ast.UnaryOp(L, 
                     operator1.text,
-                    ast.Identifier('a')
+                    ast.Identifier(L, 'a')
                 ),
                 operator2.text,
-                ast.Identifier('b'),
+                ast.Identifier(L, 'b'),
             )
 
 def test_unary_expressions_nested() -> None:
@@ -946,12 +951,12 @@ def test_unary_expressions_nested() -> None:
     for operator in operators:
         for expression in expressions:
             tokens = [operator] + expression
-            assert(parse(tokens)) == ast.UnaryOp(
+            assert(parse(tokens)) == ast.UnaryOp(L, 
                 operator.text,
-                ast.IfClause(
-                    ast.Identifier(expression[1].text),
-                    ast.Identifier(expression[3].text),
-                    ast.Identifier(expression[5].text)
+                ast.IfClause(L, 
+                    ast.Identifier(L, expression[1].text),
+                    ast.Identifier(L, expression[3].text),
+                    ast.Identifier(L, expression[5].text)
                 )
             )
 
@@ -963,18 +968,18 @@ def test_expressions_unary_nested() -> None:
     for expression in expressions:
         for operator in operators:
             tokens = expression[0:1] + [operator] + expression[1:3] + [operator] + expression[3:5] + [operator] + expression[5:6]
-            assert(parse(tokens)) == ast.IfClause(
-                    ast.UnaryOp(
+            assert(parse(tokens)) == ast.IfClause(L, 
+                    ast.UnaryOp(L, 
                         operator.text,
-                        ast.Identifier(expression[1].text),
+                        ast.Identifier(L, expression[1].text),
                     ),
-                    ast.UnaryOp(
+                    ast.UnaryOp(L, 
                         operator.text,
-                        ast.Identifier(expression[3].text),
+                        ast.Identifier(L, expression[3].text),
                     ),
-                    ast.UnaryOp(
+                    ast.UnaryOp(L, 
                         operator.text,
-                        ast.Identifier(expression[5].text),
+                        ast.Identifier(L, expression[5].text),
                     )
              )
 
@@ -984,9 +989,9 @@ def test_parse_block_with_one_identfier() -> None:
         Token("a", "identifier", L),
         Token("}", "punctuation", L),
     ]
-    assert(parse(tokens)) == ast.Block(
+    assert(parse(tokens)) == ast.Block(L, 
         [],
-        ast.Identifier("a")
+        ast.Identifier(L, "a")
     )
 
     tokens = [
@@ -995,9 +1000,9 @@ def test_parse_block_with_one_identfier() -> None:
         Token(";", "punctuation", L),
         Token("}", "punctuation", L),
     ]
-    assert(parse(tokens)) == ast.Block(
-        [ast.Identifier("a")],
-        ast.Literal(None)
+    assert(parse(tokens)) == ast.Block(L, 
+        [ast.Identifier(L, "a")],
+        ast.Literal(L, None)
     )
 
 def test_parse_block_nested() -> None:
@@ -1014,15 +1019,15 @@ def test_parse_block_nested() -> None:
         Token("}", "punctuation", L)
     ]
 
-    assert(parse(tokens)) == ast.Block(
+    assert(parse(tokens)) == ast.Block(L, 
         [
-            ast.Identifier("a"),
-            ast.Block(
-                [ast.Identifier("b")],
-                ast.Literal(None)
+            ast.Identifier(L, "a"),
+            ast.Block(L, 
+                [ast.Identifier(L, "b")],
+                ast.Literal(L, None)
             )
         ],
-        ast.Identifier("c")
+        ast.Identifier(L, "c")
     )
 
 def test_parse_block_expression_nested() -> None:
@@ -1031,20 +1036,20 @@ def test_parse_block_expression_nested() -> None:
         [Token('if', 'identifier', L), Token('a', 'identifier', L), Token('then', 'identifier', L), Token('b', 'identifier', L), Token('else', 'identifier', L), Token('c', 'identifier', L)]
     ]
     tokens = [Token("{", "punctuation", L)] + expressions[0] + [Token(";", "punctuation", L)] + expressions[1] + [Token(";", "punctuation", L)] + [Token("}", "punctuation", L)]
-    assert(parse(tokens)) == ast.Block(
+    assert(parse(tokens)) == ast.Block(L, 
         [
-            ast.BinaryOp(
-                ast.Identifier('a'),
+            ast.BinaryOp(L, 
+                ast.Identifier(L, 'a'),
                 '+',
-                ast.Identifier('b')
+                ast.Identifier(L, 'b')
             ),
-            ast.IfClause(
-                ast.Identifier('a'),
-                ast.Identifier('b'),
-                ast.Identifier('c')
+            ast.IfClause(L, 
+                ast.Identifier(L, 'a'),
+                ast.Identifier(L, 'b'),
+                ast.Identifier(L, 'c')
             )
         ],
-        ast.Literal(None)
+        ast.Literal(L, None)
     )
 
 def test_expression_parse_block_expression_nested() -> None:
@@ -1053,23 +1058,23 @@ def test_expression_parse_block_expression_nested() -> None:
         [Token('if', 'identifier', L), Token('a', 'identifier', L), Token('then', 'identifier', L), Token('b', 'identifier', L), Token('else', 'identifier', L), Token('c', 'identifier', L)]
     ]
     tokens = [Token('z', 'identifier', L), Token('=', 'operator', L)] + [Token("{", "punctuation", L)] + expressions[0] + [Token(";", "punctuation", L)] + expressions[1] + [Token(";", "punctuation", L)] + [Token("}", "punctuation", L)]
-    assert(parse(tokens)) == ast.Assignment(
-        ast.Identifier('z'),
+    assert(parse(tokens)) == ast.Assignment(L, 
+        ast.Identifier(L, 'z'),
         '=',
-        ast.Block(
+        ast.Block(L, 
             [
-                ast.BinaryOp(
-                    ast.Identifier('a'),
+                ast.BinaryOp(L, 
+                    ast.Identifier(L, 'a'),
                     '+',
-                    ast.Identifier('b')
+                    ast.Identifier(L, 'b')
                 ),
-                ast.IfClause(
-                    ast.Identifier('a'),
-                    ast.Identifier('b'),
-                    ast.Identifier('c')
+                ast.IfClause(L, 
+                    ast.Identifier(L, 'a'),
+                    ast.Identifier(L, 'b'),
+                    ast.Identifier(L, 'c')
                 )
             ],
-            ast.Literal(None)
+            ast.Literal(L, None)
         )
     )
 
@@ -1107,12 +1112,12 @@ def test_var_declaration_possible_in_top() -> None:
         Token("b", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.UnaryOp(
+    assert(parse(tokens)) == ast.UnaryOp(L, 
         "var",
-        ast.Assignment(
-            ast.Identifier("a"),
+        ast.Assignment(L, 
+            ast.Identifier(L, "a"),
             "=",
-            ast.Identifier("b")
+            ast.Identifier(L, "b")
         )
     )
 
@@ -1130,18 +1135,18 @@ def test_var_declaration_possible_in_block() -> None:
         Token("}", "punctuation", L)
     ]
 
-    assert(parse(tokens)) == ast.Block(
-        [ast.BinaryOp(
-            ast.Literal(1),
+    assert(parse(tokens)) == ast.Block(L, 
+        [ast.BinaryOp(L, 
+            ast.Literal(L, 1),
             '+',
-            ast.Literal(2)
+            ast.Literal(L, 2)
         )],
-        ast.UnaryOp(
+        ast.UnaryOp(L, 
             "var",
-            ast.Assignment(
-                ast.Identifier("a"),
+            ast.Assignment(L, 
+                ast.Identifier(L, "a"),
                 "=",
-                ast.Identifier("b")
+                ast.Identifier(L, "b")
             )
         )
     )
@@ -1192,7 +1197,7 @@ def test_var_declaration_not_possible_outside_block_or_top() -> None:
         parse(tokens)
     assert(e.value.args[0]) == ':0:0: garbage at end of expression.'
 
-def test_semicolons_are_optional_after_block() -> None:
+def test_block_blockA_blockB_without_semi() -> None:
     tokens = [
         Token("{", "punctuation", L),
         Token("{", "punctuation", L),
@@ -1203,17 +1208,18 @@ def test_semicolons_are_optional_after_block() -> None:
         Token("}", "punctuation", L),
         Token("}", "punctuation", L)
     ]
-    assert(parse(tokens)) == ast.Block(
-        [ast.Block(
+    assert(parse(tokens)) == ast.Block(L, 
+        [ast.Block(L, 
             [],
-            ast.Identifier("a")
+            ast.Identifier(L, "a")
         )],
-        ast.Block(
+        ast.Block(L, 
             [],
-            ast.Identifier("b")
+            ast.Identifier(L, "b")
         )
     )
     
+def test_blockAB_fails_gracefully() -> None:
     tokens = [
         Token("{", "punctuation", L),
         Token("{", "punctuation", L),
@@ -1225,6 +1231,8 @@ def test_semicolons_are_optional_after_block() -> None:
     with pytest.raises(Exception) as e:
         parse(tokens)
     assert(e.value.args[0]) == ':0:0: expected "}"'
+
+def test_block_if_then_blockA_b() -> None:
     tokens = [
         Token("{", "punctuation", L),
         Token("if", "identifier", L),
@@ -1236,16 +1244,18 @@ def test_semicolons_are_optional_after_block() -> None:
         Token("b", "identifier", L),
         Token("}", "punctuation", L)
     ]
-    assert(parse(tokens)) == ast.Block(
-        [ast.IfClause(
-            ast.Identifier("true"),
-            ast.Block(
+    assert(parse(tokens)) == ast.Block(L, 
+        [ast.IfClause(L, 
+            ast.Identifier(L, "true"),
+            ast.Block(L, 
                 [],
-                ast.Identifier("a")
+                ast.Identifier(L, "a")
             ),
         )],
-        ast.Identifier("b")
+        ast.Identifier(L, "b")
     )
+
+def test_block_if_then_blockA_semi_b() -> None:
     tokens = [
         Token("{", "punctuation", L),
         Token("if", "identifier", L),
@@ -1258,16 +1268,18 @@ def test_semicolons_are_optional_after_block() -> None:
         Token("b", "identifier", L),
         Token("}", "punctuation", L)
     ]
-    assert(parse(tokens)) == ast.Block(
-        [ast.IfClause(
-            ast.Identifier("true"),
-            ast.Block(
+    assert(parse(tokens)) == ast.Block(L, 
+        [ast.IfClause(L, 
+            ast.Identifier(L, "true"),
+            ast.Block(L, 
                 [],
-                ast.Identifier("a")
+                ast.Identifier(L, "a")
             ),
         )],
-        ast.Identifier("b")
+        ast.Identifier(L, "b")
     )
+
+def test_block_if_then_blockA_b_c_fails_gracefully() -> None:
     tokens = [
         Token("{", "punctuation", L),
         Token("if", "identifier", L),
@@ -1283,6 +1295,8 @@ def test_semicolons_are_optional_after_block() -> None:
     with pytest.raises(Exception) as e:
         parse(tokens)
     assert(e.value.args[0]) == ':0:0: expected "}"'
+
+def test_block_if_then_blockA_b_semi_c() -> None:
     tokens = [
         Token("{", "punctuation", L),
         Token("if", "identifier", L),
@@ -1296,17 +1310,19 @@ def test_semicolons_are_optional_after_block() -> None:
         Token("c", "identifier", L),
         Token("}", "punctuation", L)
     ]
-    assert(parse(tokens)) == ast.Block(
-        [ast.IfClause(
-            ast.Identifier("true"),
-            ast.Block(
+    assert(parse(tokens)) == ast.Block(L, 
+        [ast.IfClause(L, 
+            ast.Identifier(L, "true"),
+            ast.Block(L, 
                 [],
-                ast.Identifier("a")
+                ast.Identifier(L, "a")
             )
-        ), ast.Identifier("b")
+        ), ast.Identifier(L, "b")
         ],
-        ast.Identifier("c")
+        ast.Identifier(L, "c")
     )
+
+def test_block_if_then_blockA_else_blockB_c() -> None:
     tokens = [
         Token("{", "punctuation", L),
         Token("if", "identifier", L),
@@ -1322,20 +1338,22 @@ def test_semicolons_are_optional_after_block() -> None:
         Token("c", "identifier", L),
         Token("}", "punctuation", L)
     ]
-    assert(parse(tokens)) == ast.Block(
-        [ast.IfClause(
-            ast.Identifier("true"),
-            ast.Block(
+    assert(parse(tokens)) == ast.Block(L, 
+        [ast.IfClause(L, 
+            ast.Identifier(L, "true"),
+            ast.Block(L, 
                 [],
-                ast.Identifier("a")
+                ast.Identifier(L, "a")
             ),
-            ast.Block(
+            ast.Block(L, 
                 [],
-                ast.Identifier("b")
+                ast.Identifier(L, "b")
             ),
         )],
-        ast.Identifier("c")
+        ast.Identifier(L, "c")
     )
+
+def test_x_assign_block_blockFunction_blockB() -> None:
     tokens = [
         Token("x", "identifier", L),
         Token("=", "operator", L),
@@ -1352,20 +1370,20 @@ def test_semicolons_are_optional_after_block() -> None:
         Token("}", "punctuation", L)
     ]
 
-    assert(parse(tokens)) == ast.Assignment(
-        ast.Identifier('x'),
+    assert(parse(tokens)) == ast.Assignment(L, 
+        ast.Identifier(L, 'x'),
         '=',
-        ast.Block(
-            [ast.Block(
+        ast.Block(L, 
+            [ast.Block(L, 
                 [],
-                ast.FunctionCall(
-                    ast.Identifier('f'),
-                    [ast.Identifier('a')]
+                ast.FunctionCall(L, 
+                    ast.Identifier(L, 'f'),
+                    [ast.Identifier(L, 'a')]
                 )
             )],
-            ast.Block(
+            ast.Block(L, 
                 [],
-                ast.Identifier('b')
+                ast.Identifier(L, 'b')
             )
         )
     )

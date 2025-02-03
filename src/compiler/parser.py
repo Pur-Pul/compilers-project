@@ -1,4 +1,4 @@
-from compiler.tokenizer import Token, Source
+from compiler.tokenizer import Token, Source, L
 import compiler.ast as ast
 
 def parse(tokens: list[Token]) -> ast.Expression:
@@ -49,13 +49,13 @@ def parse(tokens: list[Token]) -> ast.Expression:
         if peek().type != 'int_literal':
             raise Exception(f'{peek().source}: expected an integer literal')
         token = consume()
-        return ast.Literal(int(token.text))
+        return ast.Literal(token.source, int(token.text))
     
     def parse_identifier() -> ast.Identifier:
         if peek().type != 'identifier':
             raise Exception(f'{peek().source}: expected an identifier')
         token = consume()
-        return ast.Identifier(token.text)
+        return ast.Identifier(token.source, token.text)
     
     def parse_parenthesized() -> ast.Expression:
         consume('(')
@@ -64,19 +64,21 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return expr
 
     def parse_if() -> ast.IfClause:
-        consume('if')
+        location = consume('if').source
         condition = parse_expression_right_binary()
         consume('then')
         then = parse_expression_right_binary()
         if peek().text == 'else':
             consume('else')
             return ast.IfClause(
+                location,
                 condition,
                 then,
                 parse_expression_right_binary()
             )
         else:
             return ast.IfClause(
+                location,
                 condition,
                 then
             )
@@ -92,8 +94,9 @@ def parse(tokens: list[Token]) -> ast.Expression:
         params = parse_list()
         consume(')')
         return ast.FunctionCall(
+            function_name.location,
             function_name,
-            params
+            params,
         )
     
     def parse_block(first: bool = True) -> ast.Block:
@@ -101,24 +104,23 @@ def parse(tokens: list[Token]) -> ast.Expression:
             consume('{')
         if peek().text == '}':
             consume('}')
-            return ast.Block([], ast.Literal(None))
+            return ast.Block(L, [], ast.Literal(L, None))
 
         expr = parse_top()
-        print(expr)
-        if (isinstance(expr, ast.Block) and expr.result == ast.Literal(None)):
+        if (isinstance(expr, ast.Block) and expr.result == ast.Literal(expr.location, None)):
             block = parse_block(False)
             block.expressions = expr.expressions + block.expressions
             return block
         elif isinstance(expr, ast.Block) and peek().text == "}":
             consume("}")
-            return ast.Block([], expr)
+            return ast.Block(expr.location, [], expr)
         elif isinstance(expr, ast.Block) or isinstance(expr, ast.IfClause):
             block = parse_block(False)
             block.expressions = [expr] + block.expressions
             return block
         else:
             consume('}')
-            return ast.Block([], expr)
+            return ast.Block(expr.location, [], expr)
 
     def parse_factor() -> ast.Expression:
         print(peek().text)
@@ -146,6 +148,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
             operator_token = consume()
             right = parse_expression_unary()
             return ast.UnaryOp(
+                operator_token.source,
                 operator_token.text,
                 right
             )
@@ -160,6 +163,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
             operator_token = consume()
             right = parse_expression_left_binary(index+1)
             left = ast.BinaryOp(
+                operator_token.source,
                 left,
                 operator_token.text,
                 right
@@ -167,9 +171,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return left
 
     def parse_assignment(left : ast.Expression) -> ast.Assignment:
-        consume("=")
+        location = consume("=").source
         right = parse_expression_right_binary()
         return ast.Assignment(
+            location,
             left,
             "=",
             right
@@ -183,11 +188,12 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return left
     
     def parse_top() -> ast.Expression:
-        expr: ast.Expression = ast.Expression()
+        expr: ast.Expression = ast.Expression(L)
         if peek().text == "var":
-            consume("var")
+            location = consume("var").source
             left = parse_expression_left_binary()
             expr =  ast.UnaryOp(
+                location,
                 "var",
                 parse_assignment(left)
             )
@@ -196,8 +202,9 @@ def parse(tokens: list[Token]) -> ast.Expression:
         if peek().text == ";":
             consume(";")
             expr = ast.Block(
+                expr.location,
                 [expr],
-                ast.Literal(None)
+                ast.Literal(L, None)
             )
         return expr
     
