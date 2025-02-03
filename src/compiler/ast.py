@@ -28,11 +28,12 @@ class UnaryOp(Expression):
     right: Expression
 
 @dataclass
-class IfClause(Expression):
-    """AST node for an if statement"""
+class Conditional(Expression):
+    """AST node for a conditional statement like `if A then B"""
+    op: str
     condition: Expression
-    then: Expression
-    otherwise: Optional[Expression] = None
+    first: Expression
+    second: Optional[Expression] = None
 
 @dataclass
 class Block(Expression):

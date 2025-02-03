@@ -74,22 +74,24 @@ def parse(tokens: list[Token]) -> ast.Expression:
         consume(')')
         return expr
 
-    def parse_if() -> ast.IfClause:
+    def parse_if() -> ast.Conditional:
         location = consume('if').source
         condition = parse_expression_right_binary()
         consume('then')
         then = parse_expression_right_binary()
         if peek().text == 'else':
             consume('else')
-            return ast.IfClause(
+            return ast.Conditional(
                 location,
+                "if",
                 condition,
                 then,
                 parse_expression_right_binary()
             )
         else:
-            return ast.IfClause(
+            return ast.Conditional(
                 location,
+                "if",
                 condition,
                 then
             )
@@ -125,7 +127,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         elif isinstance(expr, ast.Block) and peek().text == "}":
             consume("}")
             return ast.Block(expr.location, [], expr)
-        elif isinstance(expr, ast.Block) or isinstance(expr, ast.IfClause):
+        elif isinstance(expr, ast.Block) or isinstance(expr, ast.Conditional):
             block = parse_block(False)
             block.expressions = [expr] + block.expressions
             return block

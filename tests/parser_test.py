@@ -128,12 +128,31 @@ def test_empty_tokens_fails_gracefully() -> None:
     assert(e.value.args[0]) == ':0:0: expected "(", an integer literal or an identifier'
 
 def test_if_identifier_then_identifier() -> None:
-    tokens = [Token("if", "identifier", L), Token("something", "identifier", L), Token("then", "identifier", L), Token("somethingElse", "identifier", L)]
-    assert(parse(tokens)) == ast.IfClause(L, ast.Identifier(L, "something"),ast.Identifier(L, "somethingElse"))
+    tokens = [
+        Token("if", "identifier", L),
+        Token("something", "identifier", L),
+        Token("then", "identifier", L),
+        Token("somethingElse", "identifier", L)
+    ]
+    assert(parse(tokens)) == ast.Conditional(L, "if",  
+        ast.Identifier(L, "something"),
+        ast.Identifier(L, "somethingElse")
+    )
 
 def test_if_identifier_then_identifier_else_identifier() -> None:
-    tokens = [Token("if", "identifier", L), Token("something", "identifier", L), Token("then", "identifier", L), Token("somethingElse", "identifier", L), Token("else", "identifier", L), Token("somethingThird", "identifier", L)]
-    assert(parse(tokens)) == ast.IfClause(L, ast.Identifier(L, "something"),ast.Identifier(L, "somethingElse"),ast.Identifier(L, "somethingThird"))
+    tokens = [
+        Token("if", "identifier", L),
+        Token("something", "identifier", L),
+        Token("then", "identifier", L),
+        Token("somethingElse", "identifier", L),
+        Token("else", "identifier", L),
+        Token("somethingThird", "identifier", L)
+    ]
+    assert(parse(tokens)) == ast.Conditional(L, "if", 
+        ast.Identifier(L, "something"),
+        ast.Identifier(L, "somethingElse"),
+        ast.Identifier(L, "somethingThird")
+    )
 
 def test_if_else_nested() -> None:
     tokens = [
@@ -149,9 +168,9 @@ def test_if_else_nested() -> None:
         Token("else", "identifier", L),
         Token("dosomething", "identifier", L)
     ]
-    assert(parse(tokens)) == ast.IfClause(L, 
+    assert(parse(tokens)) == ast.Conditional(L, "if",  
         ast.Identifier(L, "something"),
-        ast.IfClause(L, 
+        ast.Conditional(L, "if",  
             ast.Identifier(L, "somethingElse"),
             ast.Identifier(L, "do"),
             ast.Identifier(L, "doNot"),
@@ -198,13 +217,13 @@ def test_if_else_nested_with_operations() -> None:
             Token("/", "operator", L),
             Token("4", "int_literal", L),
     ]
-    assert(parse(tokens)) == ast.IfClause(L, 
+    assert(parse(tokens)) == ast.Conditional(L, "if",  
         ast.BinaryOp(L, 
             ast.Literal(L, 5),
             '-',
             ast.Literal(L, 4)
         ),
-        ast.IfClause(L, 
+        ast.Conditional(L, "if",  
             ast.BinaryOp(L, 
                 ast.Identifier(L, 'a'),
                 '+',
@@ -221,7 +240,7 @@ def test_if_else_nested_with_operations() -> None:
                 ast.Literal(L, 3)
             ),
         ),
-        ast.IfClause(L, 
+        ast.Conditional(L, "if",  
             ast.BinaryOp(L, 
                 ast.Identifier(L, 'd'),
                 '*',
@@ -256,7 +275,7 @@ def test_if_else_in_operation() -> None:
     assert(parse(tokens)) == ast.BinaryOp(L, 
         ast.Literal(L, 1),
         '+',
-        ast.IfClause(L, 
+        ast.Conditional(L, "if",  
             ast.BinaryOp(L, 
                 ast.Literal(L, 5),
                 '-',
@@ -953,7 +972,7 @@ def test_unary_expressions_nested() -> None:
             tokens = [operator] + expression
             assert(parse(tokens)) == ast.UnaryOp(L, 
                 operator.text,
-                ast.IfClause(L, 
+                ast.Conditional(L, "if",  
                     ast.Identifier(L, expression[1].text),
                     ast.Identifier(L, expression[3].text),
                     ast.Identifier(L, expression[5].text)
@@ -968,7 +987,7 @@ def test_expressions_unary_nested() -> None:
     for expression in expressions:
         for operator in operators:
             tokens = expression[0:1] + [operator] + expression[1:3] + [operator] + expression[3:5] + [operator] + expression[5:6]
-            assert(parse(tokens)) == ast.IfClause(L, 
+            assert(parse(tokens)) == ast.Conditional(L, "if",  
                     ast.UnaryOp(L, 
                         operator.text,
                         ast.Identifier(L, expression[1].text),
@@ -1043,7 +1062,7 @@ def test_parse_block_expression_nested() -> None:
                 '+',
                 ast.Identifier(L, 'b')
             ),
-            ast.IfClause(L, 
+            ast.Conditional(L, "if",  
                 ast.Identifier(L, 'a'),
                 ast.Identifier(L, 'b'),
                 ast.Identifier(L, 'c')
@@ -1068,7 +1087,7 @@ def test_expression_parse_block_expression_nested() -> None:
                     '+',
                     ast.Identifier(L, 'b')
                 ),
-                ast.IfClause(L, 
+                ast.Conditional(L, "if",  
                     ast.Identifier(L, 'a'),
                     ast.Identifier(L, 'b'),
                     ast.Identifier(L, 'c')
@@ -1245,7 +1264,7 @@ def test_block_if_then_blockA_b() -> None:
         Token("}", "punctuation", L)
     ]
     assert(parse(tokens)) == ast.Block(L, 
-        [ast.IfClause(L, 
+        [ast.Conditional(L, "if",  
             ast.Literal(L, True),
             ast.Block(L, 
                 [],
@@ -1269,7 +1288,7 @@ def test_block_if_then_blockA_semi_b() -> None:
         Token("}", "punctuation", L)
     ]
     assert(parse(tokens)) == ast.Block(L, 
-        [ast.IfClause(L, 
+        [ast.Conditional(L, "if",  
             ast.Literal(L, True),
             ast.Block(L, 
                 [],
@@ -1311,7 +1330,7 @@ def test_block_if_then_blockA_b_semi_c() -> None:
         Token("}", "punctuation", L)
     ]
     assert(parse(tokens)) == ast.Block(L, 
-        [ast.IfClause(L, 
+        [ast.Conditional(L, "if",  
             ast.Literal(L, True),
             ast.Block(L, 
                 [],
@@ -1339,7 +1358,7 @@ def test_block_if_then_blockA_else_blockB_c() -> None:
         Token("}", "punctuation", L)
     ]
     assert(parse(tokens)) == ast.Block(L, 
-        [ast.IfClause(L, 
+        [ast.Conditional(L, "if",  
             ast.Literal(L, True),
             ast.Block(L, 
                 [],
