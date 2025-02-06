@@ -22,6 +22,10 @@ def test_parse_one_int_literal() -> None:
     tokens = [Token("1", "int_literal", L)]
     assert(parse(tokens)) == ast.Literal(L, 1)
 
+def test_parse_one_boolean_literal() -> None:
+    assert(parse([Token("true", "identifier", L)])) == ast.Literal(L, True)
+    assert(parse([Token("false", "identifier", L)])) == ast.Literal(L, False)
+
 def test_parse_multiple_literals_fails() -> None:
     tokens = [Token("1", "int_literal", Source("filename",5,5)),Token("2", "int_literal", Source("filename",5,7))]
     with pytest.raises(Exception) as e:
@@ -41,6 +45,19 @@ def test_parse_plus_minus() -> None:
             operator,
             ast.Literal(L, 2)
         )
+
+def test_parse_binary_operation_with_boolean() -> None:
+    tokens = [
+        Token("true", "identifier", L),
+        Token("+", "operation", L),
+        Token("false", "identifier", L)
+    ]
+
+    assert(parse(tokens)) == ast.BinaryOp(L,
+        ast.Literal(L, True),
+        "+",
+        ast.Literal(L, False)
+    )
 
 def test_parse_multiplication_division_modulo() -> None:
     operators = ["*", "/", "%"]
@@ -1405,4 +1422,96 @@ def test_x_assign_block_blockFunction_blockB() -> None:
                 ast.Identifier(L, 'b')
             )
         )
+    )
+
+def test_parse_while() -> None:
+    tokens = [
+        Token("while", "identifier", L),
+        Token("a", "identifier", L),
+        Token("do", "identifier", L),
+        Token("b", "identifier", L)
+    ]
+    assert(parse(tokens)) == ast.Conditional(L,
+        "while",
+        ast.Identifier(L, "a"),
+        ast.Identifier(L, "b")
+    )
+
+def test_parse_while_block() -> None:
+    tokens = [
+        Token("while", "identifier", L),
+        Token("a", "identifier", L),
+        Token("do", "identifier", L),
+        Token("{", "punctuation", L),
+        Token("1", "int_literal", L),
+        Token("+", "operation", L),
+        Token("2", "int_literal", L),
+        Token(";", "punctuation", L),
+        Token("true", "identifier", L),
+        Token("}", "punctuation", L)
+    ]
+    assert(parse(tokens)) == ast.Conditional(L,
+        "while",
+        ast.Identifier(L, "a"),
+        ast.Block(L,
+            [ast.BinaryOp(L,
+                ast.Literal(L, 1),
+                "+",
+                ast.Literal(L, 2)
+            )],
+            ast.Literal(L, True)
+        )
+    )
+
+
+def test_parse_multiple_top_level_expressions() -> None:
+    tokens = [
+        Token("a", "identifier", L),
+        Token("+", "operation", L),
+        Token("b", "identifier", L),
+        Token(";", "punctuation", L),
+        Token("var", "identifier", L),
+        Token("c", "identifier", L),
+        Token("=", "operation", L),
+        Token("true", "identifier", L),
+        Token(";", "punctuation", L),
+        Token("5", "int_literal", L)
+    ]
+
+    assert(parse(tokens)) == ast.Block(L,
+        [
+            ast.BinaryOp(L,
+                ast.Identifier(L, "a"),
+                "+",
+                ast.Identifier(L, "b")
+            ),
+            ast.UnaryOp(L,
+                "var",
+                ast.BinaryOp(L,
+                    ast.Identifier(L, "c"),
+                    "=",
+                    ast.Literal(L, True)
+                )
+            ),
+        ],
+        ast.Literal(L, 5)
+    )
+    assert(parse(tokens+[Token(";", "punctuation", L)])) == ast.Block(L,
+        [
+            ast.BinaryOp(L,
+                ast.Identifier(L, "a"),
+                "+",
+                ast.Identifier(L, "b")
+            ),
+             ast.UnaryOp(L,
+                "var",
+                ast.BinaryOp(L,
+                    ast.Identifier(L, "c"),
+                    "=",
+                    ast.Literal(L, True)
+                )
+            ),
+            ast.Literal(L, 5)
+        ],
+        ast.Literal(L, None)
     )

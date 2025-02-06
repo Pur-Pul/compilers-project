@@ -2,6 +2,7 @@ from compiler.tokenizer import Token, Source, L
 import compiler.ast as ast
 
 def parse(tokens: list[Token]) -> ast.Expression:
+    print(tokens)
     pos = 0
     left_associative_binary_operators = [
         ['or'],
@@ -104,38 +105,37 @@ def parse(tokens: list[Token]) -> ast.Expression:
             params,
         )
     
-    def parse_block(first: bool = True) -> ast.Block:
-        if first:
-            consume('{')
-        if peek().text == '}':
-            consume('}')
-            return ast.Block(L, [], ast.Literal(L, None))
-
-        expr = parse_top()
-        if (isinstance(expr, ast.Block) and expr.result == ast.Literal(expr.location, None)):
-            block = parse_block(False)
-            block.expressions = expr.expressions + block.expressions
-            return block
-        elif isinstance(expr, ast.Block) and peek().text == "}":
-            consume("}")
-            return ast.Block(expr.location, [], expr)
-        elif isinstance(expr, ast.Block) or isinstance(expr, ast.Conditional):
-            block = parse_block(False)
-            block.expressions = [expr] + block.expressions
+    def parse_block(expressions: list[ast.Expression] = []) -> ast.Block:
+        expr: ast.Expression = ast.Literal(L, None)
+        if peek().type != "end":
+            expr = parse_top(False)
+        print(expr)
+        if peek().text == ";":
+            consume(";")
+            return parse_block(expressions+[expr])
+        elif isinstance(expr, (ast.Block, ast.Conditional)):
+            block = parse_block(expressions+[expr])
+            if block.result == ast.Literal(expr.location, None):
+                block.result = expr
+                block.expressions = block.expressions[:-1]
             return block
         else:
-            consume('}')
-            return ast.Block(expr.location, [], expr)
+            return ast.Block(expr.location, expressions, expr)
 
     def parse_factor() -> ast.Expression:
         expr = ast.Expression(L)
+        print("peek: " + peek().text)
         match peek().type:
             case "punctuation":
                 match peek().text:
                     case "(":
                         expr = parse_parenthesized()
                     case "{":
+                        consume("{")
                         expr = parse_block()
+                        consume("}")
+                    case "}":
+                        return ast.Literal(peek().source, None)
             case "identifier":
                 match peek().text:
                     case "if" | "while":
@@ -198,7 +198,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         else:
             return left
     
-    def parse_top() -> ast.Expression:
+    def parse_top(top : bool = True) -> ast.Expression:
         expr: ast.Expression = ast.Expression(L)
         if peek().text == "var":
             location = consume("var").source
@@ -210,13 +210,16 @@ def parse(tokens: list[Token]) -> ast.Expression:
             )
         else:
             expr = parse_expression_right_binary()
-        if peek().text == ";":
+        if top and peek().text == ";":
             consume(";")
+            expr = parse_block([expr])
+            
+            """
             expr = ast.Block(
                 expr.location,
                 [expr],
                 ast.Literal(L, None)
-            )
+            )"""
         return expr
     
     main_expression = parse_top()
