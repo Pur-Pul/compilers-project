@@ -1463,7 +1463,6 @@ def test_parse_while_block() -> None:
         )
     )
 
-
 def test_parse_multiple_top_level_expressions() -> None:
     tokens = [
         Token("a", "identifier", L),

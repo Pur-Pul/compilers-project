@@ -2,7 +2,6 @@ from compiler.tokenizer import Token, Source, L
 import compiler.ast as ast
 
 def parse(tokens: list[Token]) -> ast.Expression:
-    print(tokens)
     pos = 0
     left_associative_binary_operators = [
         ['or'],
