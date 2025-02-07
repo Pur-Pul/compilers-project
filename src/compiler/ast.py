@@ -28,6 +28,11 @@ class UnaryOp(Expression):
     right: Expression
 
 @dataclass
+class VariableDeclaration(Expression):
+    """AST node for defining a variable"""
+    variable: Identifier
+
+@dataclass
 class Conditional(Expression):
     """AST node for a conditional statement like `if A then B"""
     op: str

@@ -1148,15 +1148,12 @@ def test_var_declaration_possible_in_top() -> None:
         Token("b", "identifier", L)
     ]
 
-    assert(parse(tokens)) == ast.UnaryOp(L, 
-        "var",
-        ast.BinaryOp(L, 
-            ast.Identifier(L, "a"),
-            "=",
-            ast.Identifier(L, "b")
-        )
+    assert(parse(tokens)) == ast.BinaryOp(L,  
+        ast.VariableDeclaration(L, ast.Identifier(L, "a")),
+        "=",
+        ast.Identifier(L, "b")
     )
-
+    
 def test_var_declaration_possible_in_block() -> None:
     tokens = [
         Token("{", "punctuation", L),
@@ -1177,13 +1174,11 @@ def test_var_declaration_possible_in_block() -> None:
             '+',
             ast.Literal(L, 2)
         )],
-        ast.UnaryOp(L, 
-            "var",
-            ast.BinaryOp(L, 
-                ast.Identifier(L, "a"),
-                "=",
-                ast.Identifier(L, "b")
-            )
+        
+        ast.BinaryOp(L, 
+            ast.VariableDeclaration(L, ast.Identifier(L, "a")),
+            "=",
+            ast.Identifier(L, "b")  
         )
     )
 
@@ -1484,13 +1479,11 @@ def test_parse_multiple_top_level_expressions() -> None:
                 "+",
                 ast.Identifier(L, "b")
             ),
-            ast.UnaryOp(L,
-                "var",
-                ast.BinaryOp(L,
-                    ast.Identifier(L, "c"),
-                    "=",
-                    ast.Literal(L, True)
-                )
+            
+            ast.BinaryOp(L,
+                ast.VariableDeclaration(L, ast.Identifier(L, "c")),
+                "=",
+                ast.Literal(L, True)
             ),
         ],
         ast.Literal(L, 5)
@@ -1502,13 +1495,10 @@ def test_parse_multiple_top_level_expressions() -> None:
                 "+",
                 ast.Identifier(L, "b")
             ),
-             ast.UnaryOp(L,
-                "var",
-                ast.BinaryOp(L,
-                    ast.Identifier(L, "c"),
-                    "=",
-                    ast.Literal(L, True)
-                )
+            ast.BinaryOp(L,
+                ast.VariableDeclaration(L, ast.Identifier(L, "c")),
+                "=",
+                ast.Literal(L, True)
             ),
             ast.Literal(L, 5)
         ],

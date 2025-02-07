@@ -121,9 +121,13 @@ def parse(tokens: list[Token]) -> ast.Expression:
         else:
             return ast.Block(expr.location, expressions, expr)
 
-    def parse_factor() -> ast.Expression:
+    def parse_variable_declaration() -> ast.VariableDeclaration:
+        var = consume("var")
+        return ast.VariableDeclaration(var.source, parse_identifier())
+
+    def parse_factor(top: bool = True) -> ast.Expression:
         expr = ast.Expression(L)
-        print("peek: " + peek().text)
+        
         match peek().type:
             case "punctuation":
                 match peek().text:
@@ -136,42 +140,45 @@ def parse(tokens: list[Token]) -> ast.Expression:
                     case "}":
                         return ast.Literal(peek().source, None)
             case "identifier":
-                match peek().text:
-                    case "if" | "while":
-                        expr = parse_conditional(peek().text)
-                    case "true" | "false":
-                        expr = parse_bool_literal(peek().text)
-                    case _:
-                        expr = parse_identifier()
-                        if peek().text == '(':
-                            expr = parse_function(expr)
+                if top and peek().text == "var":
+                    expr = parse_variable_declaration()
+                else:
+                    match peek().text:
+                        case "if" | "while":
+                            expr = parse_conditional(peek().text)
+                        case "true" | "false":
+                            expr = parse_bool_literal(peek().text)
+                        case _:
+                            expr = parse_identifier()
+                            if peek().text == '(':
+                                expr = parse_function(expr)
             case 'int_literal':
                 expr = parse_int_literal()       
             case _:
                 raise Exception(f'{peek().source}: expected "(", an integer literal or an identifier')
         return expr
 
-    def parse_expression_unary(index: int = 0) -> ast.Expression:
+    def parse_expression_unary(index: int = 0, top: bool = True) -> ast.Expression:
         if index == len(unary_operators):
-            return parse_factor()
+            return parse_factor(top)
         while peek().text in unary_operators[index]:
             operator_token = consume()
-            right = parse_expression_unary()
+            right = parse_expression_unary(top = False)
             return ast.UnaryOp(
                 operator_token.source,
                 operator_token.text,
                 right
             )
-        return parse_expression_unary(index+1)
+        return parse_expression_unary(index+1, top)
 
-    def parse_expression_left_binary(index: int = 0) -> ast.Expression:
+    def parse_expression_left_binary(index: int = 0, top: bool = True) -> ast.Expression:
         if index == len(left_associative_binary_operators):
-            return parse_expression_unary()
+            return parse_expression_unary(top=top)
 
-        left = parse_expression_left_binary(index+1)
+        left = parse_expression_left_binary(index+1, top)
         while peek().text in left_associative_binary_operators[index]:
             operator_token = consume()
-            right = parse_expression_left_binary(index+1)
+            right = parse_expression_left_binary(index+1, False)
             left = ast.BinaryOp(
                 operator_token.source,
                 left,
@@ -190,35 +197,18 @@ def parse(tokens: list[Token]) -> ast.Expression:
             right
         )
 
-    def parse_expression_right_binary() -> ast.Expression:
-        left = parse_expression_left_binary()
+    def parse_expression_right_binary(top: bool = False) -> ast.Expression:
+        left = parse_expression_left_binary(top=top)
         if peek().text == '=':
             return parse_assignment(left)
         else:
             return left
     
     def parse_top(top : bool = True) -> ast.Expression:
-        expr: ast.Expression = ast.Expression(L)
-        if peek().text == "var":
-            location = consume("var").source
-            left = parse_expression_left_binary()
-            expr =  ast.UnaryOp(
-                location,
-                "var",
-                parse_assignment(left)
-            )
-        else:
-            expr = parse_expression_right_binary()
+        expr = parse_expression_right_binary(top=True)
         if top and peek().text == ";":
             consume(";")
             expr = parse_block([expr])
-            
-            """
-            expr = ast.Block(
-                expr.location,
-                [expr],
-                ast.Literal(L, None)
-            )"""
         return expr
     
     main_expression = parse_top()
