@@ -10,6 +10,175 @@ def test_interpreter_int_addition() -> None:
         ast.Literal(L, 3)
     ))) == 5
 
+def test_interpreter_int_subtraction() -> None:
+    assert(interpret(ast.BinaryOp(L,
+        ast.Literal(L, 2),
+        "-",
+        ast.Literal(L, 3)
+    ))) == -1
+
+def test_interpreter_int_multiplication() -> None:
+    assert(interpret(ast.BinaryOp(L,
+        ast.Literal(L, 2),
+        "*",
+        ast.Literal(L, 3)
+    ))) == 6
+
+def test_interpreter_int_division() -> None:
+    assert(interpret(ast.BinaryOp(L,
+        ast.Literal(L, 3),
+        "/",
+        ast.Literal(L, 3)
+    ))) == 1
+
+def test_interpreter_int_modulo() -> None:
+    assert(interpret(ast.BinaryOp(L,
+        ast.Literal(L, 2),
+        "%",
+        ast.Literal(L, 3)
+    ))) == 2
+
+def test_interpreter_and() -> None:
+    assert(interpret(ast.BinaryOp(L,
+        ast.Literal(L, True),
+        "and",
+        ast.Literal(L, False)
+    ))) == False
+    assert(interpret(ast.BinaryOp(L,
+        ast.Literal(L, True),
+        "and",
+        ast.Literal(L, True)
+    ))) == True
+
+def test_interpreter_or() -> None:
+    assert(interpret(ast.BinaryOp(L,
+        ast.Literal(L, True),
+        "or",
+        ast.Literal(L, False)
+    ))) == True
+    assert(interpret(ast.BinaryOp(L,
+        ast.Literal(L, False),
+        "or",
+        ast.Literal(L, True)
+    ))) == True
+    assert(interpret(ast.BinaryOp(L,
+        ast.Literal(L, False),
+        "or",
+        ast.Literal(L, False)
+    ))) == False
+
+def test_interpreter_equal() -> None:
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 2),
+        "==",
+        ast.Literal(L, 2)
+    ))) == True
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 2),
+        "==",
+        ast.Literal(L, 3)
+    ))) == False
+
+def test_interpreter_not_equal() -> None:
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 2),
+        "!=",
+        ast.Literal(L, 2)
+    ))) == False
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 2),
+        "!=",
+        ast.Literal(L, 3)
+    ))) == True
+
+def test_interpreter_smaller() -> None:
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 2),
+        "<",
+        ast.Literal(L, 2)
+    ))) == False
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 3),
+        "<",
+        ast.Literal(L, 2)
+    ))) == False
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 2),
+        "<",
+        ast.Literal(L, 3)
+    ))) == True
+
+def test_interpreter_smaller_equal() -> None:
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 2),
+        "<=",
+        ast.Literal(L, 2)
+    ))) == True
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 3),
+        "<=",
+        ast.Literal(L, 2)
+    ))) == False
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 2),
+        "<=",
+        ast.Literal(L, 3)
+    ))) == True
+
+def test_interpreter_larger() -> None:
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 2),
+        ">",
+        ast.Literal(L, 2)
+    ))) == False
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 3),
+        ">",
+        ast.Literal(L, 2)
+    ))) == True
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 2),
+        ">",
+        ast.Literal(L, 3)
+    ))) == False
+
+def test_interpreter_larger_equal() -> None:
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 2),
+        ">=",
+        ast.Literal(L, 2)
+    ))) == True
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 3),
+        ">=",
+        ast.Literal(L, 2)
+    ))) == True
+    assert(interpret(ast.BinaryOp(L, 
+        ast.Literal(L, 2),
+        ">=",
+        ast.Literal(L, 3)
+    ))) == False
+
+def test_interpreter_negate() -> None:
+    assert(interpret(ast.UnaryOp(L,
+        '-',
+        ast.Literal(L, 1)
+    ))) == -1
+    assert(interpret(ast.UnaryOp(L,
+        '-',
+        ast.Literal(L, -1)
+    ))) == 1
+
+def test_interpreter_not() -> None:
+    assert(interpret(ast.UnaryOp(L,
+        'not',
+        ast.Literal(L, True)
+    ))) == False
+    assert(interpret(ast.UnaryOp(L,
+        'not',
+        ast.Literal(L, True)
+    ))) == False
+
 def test_interpreter_variable_declaration() -> None:
     sym_tab = SymTab()
     assert(interpret(ast.VariableDeclaration(L, ast.Identifier(L, "a")), sym_tab)) == None
@@ -22,7 +191,7 @@ def test_interpreter_non_declared_variable_fails_gracefully() -> None:
 
 def test_intepreter_assignment_updates_variable() -> None:
     sym_tab = SymTab()
-    sym_tab.define("a")
+    sym_tab.declare("a")
     assert(interpret(ast.BinaryOp(L,
         ast.Identifier(L, "a"),
         "=",
@@ -32,7 +201,7 @@ def test_intepreter_assignment_updates_variable() -> None:
 
 def test_interpreter_variable_updates_visible_to_interpreter() -> None:
     sym_tab = SymTab()
-    sym_tab.define("a")
+    sym_tab.declare("a")
     assert(interpret(ast.BinaryOp(L,
         ast.Identifier(L, "a"),
         "=",
