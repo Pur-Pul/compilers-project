@@ -235,3 +235,39 @@ def test_intepreter_block_executes_all_expressions() -> None:
             ast.Identifier(L, "a")
         )
     )) == 9
+
+def test_interprete_or_short_circuting() -> None:
+    sym_tab = SymTab()
+    sym_tab.declare("evaluated_right_hand_side")
+    sym_tab.assign("evaluated_right_hand_side", False)
+    assert(interpret(ast.BinaryOp(L,
+        ast.Literal(L, True),
+        'or',
+        ast.Block(L,
+            [ast.BinaryOp(L,
+                ast.Identifier(L, "evaluated_right_hand_side"),
+                '=',
+                ast.Literal(L, True)
+            )],
+            ast.Literal(L, True)
+        )
+    ))) == True
+    assert(sym_tab.read("evaluated_right_hand_side")) == False
+
+def test_interprete_and_short_circuting() -> None:
+    sym_tab = SymTab()
+    sym_tab.declare("evaluated_right_hand_side")
+    sym_tab.assign("evaluated_right_hand_side", False)
+    assert(interpret(ast.BinaryOp(L,
+        ast.Literal(L, False),
+        'and',
+        ast.Block(L,
+            [ast.BinaryOp(L,
+                ast.Identifier(L, "evaluated_right_hand_side"),
+                '=',
+                ast.Literal(L, True)
+            )],
+            ast.Literal(L, False)
+        )
+    ))) == False
+    assert(sym_tab.read("evaluated_right_hand_side")) == False

@@ -1,8 +1,11 @@
 from typing import Any
 from compiler import ast
-from typing import Optional, Self
+from typing import Optional, Self, Union
 from collections.abc import Callable
-type Value = int | bool | None | Callable
+type Value = int | bool | None | Union[
+    Callable[[ast.Expression], int | bool],
+    Callable[[ast.Expression, ast.Expression], int | bool]
+]
 
 class SymTab:
     parent : Optional[Self] = None
@@ -37,44 +40,76 @@ class SymTab:
             return self.parent.function(func)
         else:
             raise Exception(f"Function {func} not declared.")
-    
 
-def add(a: int, b:int) -> int:
-    return a + b 
-def sub(a: int, b:int) -> int:
-    return a - b
-def mult(a:int, b:int) -> int:
-    return a * b
-def div(a:int, b:int) -> int:
-    return int(a / b)
-def mod(a:int, b:int) -> int:
-    return a % b
-def unary_negate(a:int) -> int:
-    return -a
-def unary_not(a:bool) -> bool:
-    return not a
-def bool_and(a:bool, b:bool) -> bool:
-    return a and b
-def bool_or(a:bool, b:bool) -> bool:
-    return a or b
-def bool_equal(a:Value, b:Value) -> bool:
-    return a == b
-def bool_not_equal(a:Value, b:Value) -> bool:
-    return a != b
-def bool_smaller(a:int, b:int) -> bool:
-    return a < b
-def bool_smaller_equal(a:int, b:int) -> bool:
-    return a <= b
-def bool_larger(a:int, b:int) -> bool:
-    return a > b
-def bool_larger_equal(a:int, b:int) -> bool:
-    return a >= b
 """
 def if_clause(condition: Value, first: Value, second: Optional[Value] = None) -> Value:
     return first if condition else second
 """
 
 def interpret(node: ast.Expression, sym_tab: SymTab | None = None) -> Value:
+    def add(left: ast.Expression, right:ast.Expression) -> int:
+        a: Any = interpret(left, sym_tab)
+        b: Any = interpret(right, sym_tab)
+        return a + b 
+    def sub(left: ast.Expression, right:ast.Expression) -> int:
+        a: Any = interpret(left, sym_tab)
+        b: Any = interpret(right, sym_tab)
+        return a - b
+    def mult(left: ast.Expression, right:ast.Expression) -> int:
+        a: Any = interpret(left, sym_tab)
+        b: Any = interpret(right, sym_tab)
+        return a * b
+    def div(left: ast.Expression, right:ast.Expression) -> int:
+        a: Any = interpret(left, sym_tab)
+        b: Any = interpret(right, sym_tab)
+        return int(a / b)
+    def mod(left: ast.Expression, right:ast.Expression) -> int:
+        a: Any = interpret(left, sym_tab)
+        b: Any = interpret(right, sym_tab)
+        return a % b
+    def unary_negate(right: ast.Expression) -> int:
+        a: Any = interpret(right, sym_tab)
+        return -a
+    def unary_not(right: ast.Expression) -> bool:
+        a: Any = interpret(right, sym_tab)
+        return not a
+    def bool_and(left: ast.Expression, right:ast.Expression) -> bool:
+        a: Any = interpret(left, sym_tab)
+        if not a:
+            return False
+        b: Any = interpret(right, sym_tab)
+        return a and b
+    def bool_or(left: ast.Expression, right:ast.Expression) -> bool:
+        a: Any = interpret(left, sym_tab)
+        if a:
+            return True
+        b: Any = interpret(right, sym_tab)
+        return a or b
+    def bool_equal(left: ast.Expression, right:ast.Expression) -> bool:
+        a: Any = interpret(left, sym_tab)
+        b: Any = interpret(right, sym_tab)
+        return a == b
+    def bool_not_equal(left: ast.Expression, right:ast.Expression) -> bool:
+        a: Any = interpret(left, sym_tab)
+        b: Any = interpret(right, sym_tab)
+        return a != b
+    def bool_smaller(left: ast.Expression, right:ast.Expression) -> bool:
+        a: Any = interpret(left, sym_tab)
+        b: Any = interpret(right, sym_tab)
+        return a < b
+    def bool_smaller_equal(left: ast.Expression, right:ast.Expression) -> bool:
+        a: Any = interpret(left, sym_tab)
+        b: Any = interpret(right, sym_tab)
+        return a <= b
+    def bool_larger(left: ast.Expression, right:ast.Expression) -> bool:
+        a: Any = interpret(left, sym_tab)
+        b: Any = interpret(right, sym_tab)
+        return a > b
+    def bool_larger_equal(left: ast.Expression, right:ast.Expression) -> bool:
+        a: Any = interpret(left, sym_tab)
+        b: Any = interpret(right, sym_tab)
+        return a >= b
+
     binary_operators = {
         'or': bool_or,
         'and': bool_and,
@@ -111,6 +146,8 @@ def interpret(node: ast.Expression, sym_tab: SymTab | None = None) -> Value:
             sym_tab.declare("unary_"+operator)
             sym_tab.assign("unary_"+operator, function)
 
+    
+
     match node:
         case ast.Literal():
             return node.value
@@ -119,12 +156,12 @@ def interpret(node: ast.Expression, sym_tab: SymTab | None = None) -> Value:
             try:
                 return sym_tab.read(node.name)
             except Exception as e:
-                raise Exception(f"{node.location} "+e.args[0])
+                raise Exception(f"{node.location} {e.args[0]}")
 
         case ast.BinaryOp():
-            a: Any = interpret(node.left, sym_tab)
-            b: Any = interpret(node.right, sym_tab)
             if node.op == '=':
+                a: Any = interpret(node.left, sym_tab)
+                b: Any = interpret(node.right, sym_tab)
                 match node.left:
                     case ast.Identifier():
                         sym_tab.assign(node.left.name, b)
@@ -135,14 +172,13 @@ def interpret(node: ast.Expression, sym_tab: SymTab | None = None) -> Value:
                 return None
             else:
                 try:
-                    return sym_tab.function(node.op)(a, b)
+                    return sym_tab.function(node.op)(node.left, node.right)
                 except Exception as e:
                     raise Exception(f"{node.location} {e.args[0]}")
 
         case ast.UnaryOp():
-            value: Any = interpret(node.right, sym_tab)
             try:
-                return sym_tab.function("unary_"+node.op)(value)
+                return sym_tab.function("unary_"+node.op)(node.right)
             except Exception as e:
                 raise Exception(f"{node.location} {e.args[0]}")
 
