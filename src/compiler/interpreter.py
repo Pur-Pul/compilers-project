@@ -1,11 +1,23 @@
 from typing import Any
 from compiler import ast
-from typing import Optional, Self, Union
-from collections.abc import Callable
-type Value = int | bool | None | Union[
-    Callable[[ast.Expression], int | bool],
-    Callable[[ast.Expression, ast.Expression], int | bool]
+from typing import Optional, Self, Union, Callable
+import copy
+"""
+type Function = Union[
+    Callable[[int | bool], int | bool],
+    Callable[[int | bool, int | bool], int | bool],
+    Callable[[ast.Expression, ast.Expression, ast.Expression | None], Value],
+    Callable[[ast.Expression, ast.Expression], Value],
+    Callable[[], None]
 ]
+"""
+type Function = Union[
+    Callable[[ast.Expression, ast.Expression, ast.Expression | None, SymTab], Value],
+    Callable[[ast.Expression, ast.Expression, SymTab], Value],
+    Callable[[ast.Expression, SymTab], Value],
+    Callable[[], None]
+]
+type Value = int | bool | None | Function
 
 class SymTab:
     parent : Optional[Self] = None
@@ -32,122 +44,88 @@ class SymTab:
             return self.parent.read(variable)
         else:
             raise Exception(f"Variable {variable} not declared.")
-    
-    def function(self, func: str) -> Callable:
+
+    def call_function(self, func: str, params: list[ast.Expression | None], scope: Optional[Self] = None) -> Callable:
         if func in self.locals:
-            return self.locals[func]
+            return self.locals[func](*params, self if scope is None else scope)
         elif self.parent is not None:
-            return self.parent.function(func)
+            return self.parent.call_function(func, params, self if scope is None else scope)
         else:
             raise Exception(f"Function {func} not declared.")
 
-"""
-def if_clause(condition: Value, first: Value, second: Optional[Value] = None) -> Value:
-    return first if condition else second
-"""
+    def initialize_top(self) -> None:
+        def binary_op(op: str, sym_tab: SymTab, a: ast.Expression, b: ast.Expression) -> Value:
+            operations: dict[str, Callable[[int | bool, int | bool], Value]] = {
+                'or': lambda a, b: a or b,
+                'and': lambda a, b: a and b,
+                '==': lambda a, b: a == b,
+                '!=': lambda a, b: a != b,
+                '<': lambda a, b: a < b,
+                '<=': lambda a, b: a <= b,
+                '>': lambda a, b: a > b,
+                '>=': lambda a, b: a >= b,
+                '+': lambda a, b: a + b,
+                '-': lambda a, b: a - b,
+                '*': lambda a, b: a * b,
+                '/': lambda a, b: int(a / b),
+                '%': lambda a, b: a % b
+            }
+            left = interpret(a, sym_tab)
+            right = interpret(b, sym_tab)
+            
+            if isinstance(left, (int, bool)) and isinstance(right, (int, bool)):
+                return operations[op](left, right)
+            else:
+                raise Exception(f"Binary operation {op} recieved incompatible type.")
 
-def interpret(node: ast.Expression, sym_tab: SymTab | None = None) -> Value:
-    def add(left: ast.Expression, right:ast.Expression) -> int:
-        a: Any = interpret(left, sym_tab)
-        b: Any = interpret(right, sym_tab)
-        return a + b 
-    def sub(left: ast.Expression, right:ast.Expression) -> int:
-        a: Any = interpret(left, sym_tab)
-        b: Any = interpret(right, sym_tab)
-        return a - b
-    def mult(left: ast.Expression, right:ast.Expression) -> int:
-        a: Any = interpret(left, sym_tab)
-        b: Any = interpret(right, sym_tab)
-        return a * b
-    def div(left: ast.Expression, right:ast.Expression) -> int:
-        a: Any = interpret(left, sym_tab)
-        b: Any = interpret(right, sym_tab)
-        return int(a / b)
-    def mod(left: ast.Expression, right:ast.Expression) -> int:
-        a: Any = interpret(left, sym_tab)
-        b: Any = interpret(right, sym_tab)
-        return a % b
-    def unary_negate(right: ast.Expression) -> int:
-        a: Any = interpret(right, sym_tab)
-        return -a
-    def unary_not(right: ast.Expression) -> bool:
-        a: Any = interpret(right, sym_tab)
-        return not a
-    def bool_and(left: ast.Expression, right:ast.Expression) -> bool:
-        a: Any = interpret(left, sym_tab)
-        if not a:
-            return False
-        b: Any = interpret(right, sym_tab)
-        return a and b
-    def bool_or(left: ast.Expression, right:ast.Expression) -> bool:
-        a: Any = interpret(left, sym_tab)
-        if a:
-            return True
-        b: Any = interpret(right, sym_tab)
-        return a or b
-    def bool_equal(left: ast.Expression, right:ast.Expression) -> bool:
-        a: Any = interpret(left, sym_tab)
-        b: Any = interpret(right, sym_tab)
-        return a == b
-    def bool_not_equal(left: ast.Expression, right:ast.Expression) -> bool:
-        a: Any = interpret(left, sym_tab)
-        b: Any = interpret(right, sym_tab)
-        return a != b
-    def bool_smaller(left: ast.Expression, right:ast.Expression) -> bool:
-        a: Any = interpret(left, sym_tab)
-        b: Any = interpret(right, sym_tab)
-        return a < b
-    def bool_smaller_equal(left: ast.Expression, right:ast.Expression) -> bool:
-        a: Any = interpret(left, sym_tab)
-        b: Any = interpret(right, sym_tab)
-        return a <= b
-    def bool_larger(left: ast.Expression, right:ast.Expression) -> bool:
-        a: Any = interpret(left, sym_tab)
-        b: Any = interpret(right, sym_tab)
-        return a > b
-    def bool_larger_equal(left: ast.Expression, right:ast.Expression) -> bool:
-        a: Any = interpret(left, sym_tab)
-        b: Any = interpret(right, sym_tab)
-        return a >= b
+        def unary_op(op: str, sym_tab: SymTab, a: ast.Expression) -> Value:
+            value = interpret(a, sym_tab)
+            match op:
+                case 'unary_-':
+                    if isinstance(value, (int, bool)):
+                        return -value
+                    else:
+                        raise Exception(f"Unary operation {op} recieved incompatible type.")
+                case 'unary_not':
+                    if isinstance(value, (int, bool, type(None))):
+                        return not value
+                    else:
+                        raise Exception(f"Unary operation {op} recieved incompatible type.")
+                case _:
+                    raise Exception(f"Unkown operator {op}")
+            
+        def while_clause(sym_tab: SymTab, condition: ast.Expression, expression: ast.Expression) -> Value:
+            value: Value
+            while interpret(condition, sym_tab):
+                value = interpret(expression, sym_tab)
+            return value
 
-    binary_operators = {
-        'or': bool_or,
-        'and': bool_and,
-        '==': bool_equal,
-        '!=': bool_not_equal,
-        '<': bool_smaller,
-        '<=': bool_smaller_equal,
-        '>': bool_larger,
-        '>=': bool_larger_equal,
-        '+': add,
-        '-': sub,
-        '*': mult,
-        '/': div,
-        '%': mod
-    }
-    unary_operators = {
-        '-': unary_negate,
-        'not': unary_not
-    }
-    """
-    conditionals = {
-        'if': if_clause,
-        'while': while_clause
-    }
-    """
+        def conditional_op(op: str, sym_tab: SymTab, condition: ast.Expression, first: ast.Expression, second: Optional[ast.Expression] = None, ) -> Value:
+            match op:
+                case 'if':
+                    return interpret(first, sym_tab) if interpret(condition, sym_tab) else (interpret(second, sym_tab) if second is not None else None)
+                case 'while':
+                    return while_clause(sym_tab, condition, first)
+                case _:
+                    raise Exception(f"Unkown operator ${op}")
+
+        for variable in ['or', 'and', '==', '!=', '<', '<=', '>', '>=', '+', '-', '*', '/', '%']:
+            self.declare(variable)
+            self.assign(variable, lambda a, b, sym_tab, var=variable: binary_op(var,sym_tab,a,b))
+        for variable in ['unary_-', 'unary_not']:
+            self.declare(variable)
+            self.assign(variable, lambda a, sym_tab, var=variable: unary_op(var,sym_tab,a))
+        for variable in ['if', 'while']:
+            self.declare(variable)
+            self.assign(variable, lambda condition, first, second, sym_tab, var=variable: conditional_op(var,sym_tab,condition,first,second))
+        self.declare('unit')
+        self.assign('unit', None)
+
+def interpret(node: ast.Expression, sym_tab: SymTab | None = None, ) -> Value:
     if sym_tab is None:
         sym_tab = SymTab()
-        function: Callable
-        for operator, function in binary_operators.items():
-            sym_tab.declare(operator)
-            sym_tab.assign(operator, function)
-
-        for operator, function in unary_operators.items():
-            sym_tab.declare("unary_"+operator)
-            sym_tab.assign("unary_"+operator, function)
-
-    
-
+        sym_tab.initialize_top()
+        
     match node:
         case ast.Literal():
             return node.value
@@ -160,25 +138,38 @@ def interpret(node: ast.Expression, sym_tab: SymTab | None = None) -> Value:
 
         case ast.BinaryOp():
             if node.op == '=':
-                a: Any = interpret(node.left, sym_tab)
-                b: Any = interpret(node.right, sym_tab)
+                variable_value: Any = interpret(node.left, sym_tab)
                 match node.left:
                     case ast.Identifier():
-                        sym_tab.assign(node.left.name, b)
+                        sym_tab.assign(node.left.name, interpret(node.right, sym_tab))
                     case ast.VariableDeclaration():
-                        sym_tab.assign(node.left.variable.name, b)
+                        sym_tab.assign(node.left.variable.name, interpret(node.right, sym_tab))
                     case _:
                         raise Exception(f"{node.location} Can't assign to literal.")
                 return None
+            elif node.op == 'and':
+                try:
+                    if not interpret(node.left, sym_tab):
+                        return False
+                    return interpret(node.right, sym_tab)
+                except Exception as e:
+                    raise Exception(f"{node.location} {e.args[0]}")
+            elif node.op == 'or':
+                try:
+                    if interpret(node.left, sym_tab):
+                        return True
+                    return interpret(node.right, sym_tab)
+                except Exception as e:
+                    raise Exception(f"{node.location} {e.args[0]}")
             else:
                 try:
-                    return sym_tab.function(node.op)(node.left, node.right)
+                    return sym_tab.call_function(node.op, [node.left, node.right])
                 except Exception as e:
                     raise Exception(f"{node.location} {e.args[0]}")
 
         case ast.UnaryOp():
             try:
-                return sym_tab.function("unary_"+node.op)(node.right)
+                return sym_tab.call_function("unary_"+node.op, [node.right])
             except Exception as e:
                 raise Exception(f"{node.location} {e.args[0]}")
 
@@ -192,12 +183,7 @@ def interpret(node: ast.Expression, sym_tab: SymTab | None = None) -> Value:
             return interpret(node.result, sym_tab)
 
         case ast.Conditional():
-            if interpret(node.condition, sym_tab):
-                return interpret(node.first, sym_tab)
-            elif node.second is not None:
-                return interpret(node.second, sym_tab)
-            return None
+            return sym_tab.call_function(node.op, [node.condition, node.first, node.second]) 
 
         case _:
             raise Exception(f"{node.location} Unkown expression: {node}")
-

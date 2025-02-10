@@ -271,3 +271,59 @@ def test_interprete_and_short_circuting() -> None:
         )
     ))) == False
     assert(sym_tab.read("evaluated_right_hand_side")) == False
+
+def test_interpreter_conditional_if() -> None:
+    assert(interpret(ast.Conditional(L,
+        'if',
+        ast.Literal(L, True),
+        ast.Literal(L, 2),
+        ast.Literal(L, 3)
+    ))) == 2
+
+    assert(interpret(ast.Conditional(L,
+        'if',
+        ast.Literal(L, False),
+        ast.Literal(L, 2),
+        ast.Literal(L, 3)
+    ))) == 3
+
+def test_interpreter_conditional_while() -> None:
+    sym_tab = SymTab()
+    sym_tab.initialize_top()
+    sym_tab.declare('a')
+    sym_tab.assign('a', 0)
+    sym_tab.declare('b')
+    sym_tab.assign('b', 1)
+    assert(interpret(ast.Conditional(L, 
+        'while',
+        ast.BinaryOp(L,
+            ast.Identifier(L, 'a'),
+            '<',
+            ast.Literal(L, 5)
+        ),
+        ast.Block(L,
+            [ast.BinaryOp(L,
+                ast.Identifier(L, 'a'),
+                '=',
+                ast.BinaryOp(L,
+                    ast.Identifier(L, 'a'),
+                    '+',
+                    ast.Literal(L, 1)
+                )
+            ),
+            ast.BinaryOp(L,
+                ast.Identifier(L, 'b'),
+                '=',
+                ast.BinaryOp(L,
+                    ast.Identifier(L, 'b'),
+                    '*',
+                    ast.Literal(L, 2)
+                )
+            )],
+            ast.Identifier(L, 'b')
+        )
+    ), sym_tab)) == 32
+    assert(sym_tab.read('a')) == 5
+
+def test_interpreter_unit() -> None:
+    assert(interpret(ast.Identifier(L, "unit"))) == None
