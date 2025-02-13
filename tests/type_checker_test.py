@@ -322,3 +322,12 @@ def test_type_checker_while_conditional() -> None:
     with pytest.raises(Exception) as e:
         typecheck(ast.Conditional(L, 'while', ast.Literal(L, False), ast.Literal(L, 1), ast.Literal(L, 2)))
     assert(e.value.args[0]) == "Conditional 'while' received incorrect number of arguments. Expected 2, but received 3."
+
+def test_type_checker_typed_var_declaration() -> None:
+    sym_tab = SymTab()
+    sym_tab.initialize_top()
+    assert(typecheck(ast.VariableDeclaration(L, ast.Identifier(L, 'a'), Int))) == Int
+    assert(typecheck(ast.VariableDeclaration(L, ast.Identifier(L, 'a'), Bool))) == Bool
+    assert(typecheck(ast.VariableDeclaration(L, ast.Identifier(L, 'a'), Unit))) == Unit
+    assert(typecheck(ast.VariableDeclaration(L, ast.Identifier(L, 'a'), Any))) == Any
+    

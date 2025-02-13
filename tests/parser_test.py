@@ -2,6 +2,7 @@ import pytest
 from compiler.parser import parse
 from compiler.tokenizer import Token, Source, L
 import compiler.ast as ast
+import compiler.types as types
 
 def test_parse_one_identifier() -> None:
     tokens = [Token("first", "identifier", L)]
@@ -1504,3 +1505,30 @@ def test_parse_multiple_top_level_expressions() -> None:
         ],
         ast.Literal(L, None)
     )
+
+def test_parse_typed_variable_declaration() -> None:
+    tokens = [
+        Token("var", "identifier", L),
+        Token("a", "identifier", L),
+        Token(":", "punctuation", L)
+    ]
+
+    assert(parse(tokens+[Token("Int", "identifier", L)])) == ast.VariableDeclaration(L,
+        ast.Identifier(L, 'a'),
+        types.Int
+    )
+    assert(parse(tokens+[Token("Bool", "identifier", L)])) == ast.VariableDeclaration(L,
+        ast.Identifier(L, 'a'),
+        types.Bool
+    )
+    assert(parse(tokens+[Token("Unit", "identifier", L)])) == ast.VariableDeclaration(L,
+        ast.Identifier(L, 'a'),
+        types.Unit
+    )
+    assert(parse(tokens+[Token("Any", "identifier", L)])) == ast.VariableDeclaration(L,
+        ast.Identifier(L, 'a'),
+        types.Any
+    )
+    with pytest.raises(Exception) as e:
+        parse(tokens+[Token("foo", "identifier", L)])
+    assert(e.value.args[0]) == f"{L}: Unknown type 'foo'."

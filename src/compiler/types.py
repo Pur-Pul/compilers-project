@@ -44,6 +44,12 @@ Any = Type()
 Int = TypeInt()
 Bool = TypeBool()
 Unit = TypeUnit()
+Types = {
+    'Any':Any,
+    'Int':Int,
+    'Bool':Bool,
+    'Unit':Unit
+}
 
 @dataclass
 class FunType(Type):

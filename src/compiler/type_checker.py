@@ -75,7 +75,10 @@ def typecheck(node: ast.Expression, sym_tab: Optional[SymTab] = None) -> Type:
 
         case ast.VariableDeclaration():
             sym_tab.declare(node.variable.name)
-            return Any
+            if node.var_type is not None:
+                sym_tab.assign(node.variable.name, node.var_type)
+
+            return sym_tab.read(node.variable.name)
 
         case ast.BinaryOp():
             t1 = typecheck(node.left, sym_tab)

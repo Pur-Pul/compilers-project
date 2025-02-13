@@ -1,5 +1,6 @@
 from compiler.tokenizer import Token, Source, L
 import compiler.ast as ast
+import compiler.types as types
 
 def parse(tokens: list[Token]) -> ast.Expression:
     pos = 0
@@ -123,7 +124,15 @@ def parse(tokens: list[Token]) -> ast.Expression:
 
     def parse_variable_declaration() -> ast.VariableDeclaration:
         var = consume("var")
-        return ast.VariableDeclaration(var.source, parse_identifier())
+        name = parse_identifier()
+        var_type = None
+        if peek().text == ':':
+            consume(':')
+            type_identifier = parse_identifier()
+            if not type_identifier.name in types.Types:
+                raise Exception(f"{type_identifier.location}: Unknown type '{type_identifier.name}'.")
+            var_type = types.Types[type_identifier.name]
+        return ast.VariableDeclaration(var.source, name, var_type)
 
     def parse_factor(top: bool = True) -> ast.Expression:
         expr = ast.Expression(L)

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 from compiler.tokenizer import Source, L
+from compiler.types import Type
 @dataclass
 class Expression:
     """Base class for AST nodes representing expressions."""
@@ -31,6 +32,7 @@ class UnaryOp(Expression):
 class VariableDeclaration(Expression):
     """AST node for defining a variable"""
     variable: Identifier
+    var_type: Optional[Type] = None
 
 @dataclass
 class Conditional(Expression):
