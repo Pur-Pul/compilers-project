@@ -54,11 +54,7 @@ class SymTab:
             self.declare(variable)
             self.assign(variable, var_type)
 
-def typecheck(node: ast.Expression, sym_tab: Optional[SymTab] = None) -> Type:
-    if sym_tab is None:
-        sym_tab = SymTab()
-        sym_tab.initialize_top()
-
+def typecheck_resolve(node: ast.Expression, sym_tab: SymTab) -> Type:
     match node:
         case ast.Literal():
             if isinstance(node.value, bool):
@@ -77,8 +73,7 @@ def typecheck(node: ast.Expression, sym_tab: Optional[SymTab] = None) -> Type:
             sym_tab.declare(node.variable.name)
             if node.var_type is not None:
                 sym_tab.assign(node.variable.name, node.var_type)
-
-            return sym_tab.read(node.variable.name)
+            return typecheck(node.variable, sym_tab)
 
         case ast.BinaryOp():
             t1 = typecheck(node.left, sym_tab)
@@ -103,7 +98,6 @@ def typecheck(node: ast.Expression, sym_tab: Optional[SymTab] = None) -> Type:
             if not isinstance(operation, FunType):
                 raise Exception(f"'{node.op}' is not a binary function.")
             if t1 > operation.parameters[0]:
-                print(t1, operation.parameters[0])
                 raise Exception(f"Unsupported type '{t1}' left of '{node.op}'. {operation}")
             if t2 > operation.parameters[1]:
                 raise Exception(f"Unsupported type '{t2}' right of '{node.op}'. {operation}")
@@ -134,7 +128,6 @@ def typecheck(node: ast.Expression, sym_tab: Optional[SymTab] = None) -> Type:
                 raise Exception(f"Function '{node.function.name}' received incorrect number of arguments. Expected {arg_n}, but received {len(param_t)}.")
             
             for i in range(arg_n):
-                print(func_t.parameters[i], param_t[i])
                 if func_t.parameters[i] < param_t[i] or not func_t.parameters[i] >= param_t[i]:
                     raise Exception(f"Function '{node.function.name}' argument number {i+1} is incorrect type. Expected '{func_t.parameters[i]}', but received '{param_t[i]}'.")
             
@@ -175,3 +168,11 @@ def typecheck(node: ast.Expression, sym_tab: Optional[SymTab] = None) -> Type:
 
         case _:
             raise Exception(f"Unkown expression {node}")
+
+def typecheck(node: ast.Expression, sym_tab: Optional[SymTab] = None) -> Type:
+    if sym_tab is None:
+        sym_tab = SymTab()
+        sym_tab.initialize_top()
+    node.type = typecheck_resolve(node, sym_tab)
+    return node.type
+   

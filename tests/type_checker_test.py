@@ -330,4 +330,25 @@ def test_type_checker_typed_var_declaration() -> None:
     assert(typecheck(ast.VariableDeclaration(L, ast.Identifier(L, 'a'), Bool))) == Bool
     assert(typecheck(ast.VariableDeclaration(L, ast.Identifier(L, 'a'), Unit))) == Unit
     assert(typecheck(ast.VariableDeclaration(L, ast.Identifier(L, 'a'), Any))) == Any
-    
+
+def test_type_checker_initializes_types() -> None:
+    sym_tab = SymTab()
+    sym_tab.initialize_top()
+    sym_tab.declare('a')
+    sym_tab.assign('a', FunType([Int], Int))
+    expr: ast.Expression
+    expr = ast.VariableDeclaration(L, ast.Identifier(L, 'b'), Int)
+    result = typecheck(expr, sym_tab)
+    assert(expr.type) == result
+    assert(expr.variable.type) == result
+
+    expr = ast.FunctionCall(L, ast.Identifier(L, 'a'), [ast.Identifier(L, 'b')])
+    result = typecheck(expr, sym_tab)
+    assert(expr.type) == result
+    assert(expr.function.type) == FunType([Int], Int)
+
+    expr = ast.BinaryOp(L, ast.FunctionCall(L, ast.Identifier(L, 'a'), [ast.Identifier(L, 'b')]), '+', ast.Identifier(L, 'b'))
+    result = typecheck(expr, sym_tab)
+    assert(expr.type) == result
+    assert(expr.left.type) == result
+    assert(expr.right.type) == result

@@ -1,11 +1,12 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 from compiler.tokenizer import Source, L
-from compiler.types import Type
+from compiler.types import Type, Unit
 @dataclass
 class Expression:
     """Base class for AST nodes representing expressions."""
     location: Source
+    type: Type = field(kw_only=True, default=Unit)
 
 @dataclass
 class Literal(Expression):

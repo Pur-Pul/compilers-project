@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, Self
 
-@dataclass
+@dataclass(frozen=True)
 class Type:
     """General type class."""
     def __eq__(self, other: object) -> bool:
@@ -22,19 +22,19 @@ class Type:
     def __str__(self) -> str:
         return "Any"
 
-@dataclass
+@dataclass(frozen=True)
 class TypeInt(Type):
     """Type of a 64 bit signed integer."""
     def __str__(self) -> str:
         return "Int"
 
-@dataclass
+@dataclass(frozen=True)
 class TypeBool(Type):
     """Type of a boolean value."""
     def __str__(self) -> str:
         return "Bool"
 
-@dataclass
+@dataclass(frozen=True)
 class TypeUnit(Type):
     """Type of an empty value."""
     def __str__(self) -> str:
@@ -51,7 +51,7 @@ Types = {
     'Unit':Unit
 }
 
-@dataclass
+@dataclass(frozen=True)
 class FunType(Type):
     """Type of a function"""
     parameters: list[Type]
