@@ -1,16 +1,7 @@
 from typing import Any
 from compiler import ast
 from typing import Optional, Self, Union, Callable
-import copy
-"""
-type Function = Union[
-    Callable[[int | bool], int | bool],
-    Callable[[int | bool, int | bool], int | bool],
-    Callable[[ast.Expression, ast.Expression, ast.Expression | None], Value],
-    Callable[[ast.Expression, ast.Expression], Value],
-    Callable[[], None]
-]
-"""
+
 type Function = Union[
     Callable[[ast.Expression, ast.Expression, ast.Expression | None, SymTab], Value],
     Callable[[ast.Expression, ast.Expression, SymTab], Value],
@@ -35,7 +26,7 @@ class SymTab:
         elif self.parent is not None:
             self.parent.assign(variable, value)
         else:
-            raise Exception(f"Variable {variable} not declared.")
+            raise Exception(f"Variable '{variable}' is not declared.")
 
     def read(self, variable: str) -> Value:
         if variable in self.locals:
@@ -43,15 +34,15 @@ class SymTab:
         elif self.parent is not None:
             return self.parent.read(variable)
         else:
-            raise Exception(f"Variable {variable} not declared.")
+            raise Exception(f"Variable '{variable}' is not declared.")
 
-    def call_function(self, func: str, params: list[ast.Expression | None], scope: Optional[Self] = None) -> Callable:
+    def call_function(self, func: str, params: list[ast.Expression | None], scope: Optional[Self] = None) -> Value:
         if func in self.locals:
             return self.locals[func](*params, self if scope is None else scope)
         elif self.parent is not None:
             return self.parent.call_function(func, params, self if scope is None else scope)
         else:
-            raise Exception(f"Function {func} not declared.")
+            raise Exception(f"Function '{func}' is not declared.")
 
     def initialize_top(self) -> None:
         def binary_op(op: str, sym_tab: SymTab, a: ast.Expression, b: ast.Expression) -> Value:
@@ -95,10 +86,9 @@ class SymTab:
                     raise Exception(f"Unkown operator {op}")
             
         def while_clause(sym_tab: SymTab, condition: ast.Expression, expression: ast.Expression) -> Value:
-            value: Value
             while interpret(condition, sym_tab):
-                value = interpret(expression, sym_tab)
-            return value
+                interpret(expression, sym_tab)
+            return None
 
         def conditional_op(op: str, sym_tab: SymTab, condition: ast.Expression, first: ast.Expression, second: Optional[ast.Expression] = None, ) -> Value:
             match op:
@@ -178,9 +168,10 @@ def interpret(node: ast.Expression, sym_tab: SymTab | None = None, ) -> Value:
             return None
 
         case ast.Block():
+            new_sym_tab = SymTab(sym_tab)
             for expression in node.expressions:
-                interpret(expression, sym_tab)
-            return interpret(node.result, sym_tab)
+                interpret(expression, new_sym_tab)
+            return interpret(node.result, new_sym_tab)
 
         case ast.Conditional():
             return sym_tab.call_function(node.op, [node.condition, node.first, node.second]) 

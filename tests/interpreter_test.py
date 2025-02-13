@@ -187,7 +187,7 @@ def test_interpreter_variable_declaration() -> None:
 def test_interpreter_non_declared_variable_fails_gracefully() -> None:
     with pytest.raises(Exception) as e:
         interpret(ast.Identifier(L, "a"))
-    assert(e.value.args[0]) == f"{L} Variable a not declared."
+    assert(e.value.args[0]) == f"{L} Variable 'a' is not declared."
 
 def test_intepreter_assignment_updates_variable() -> None:
     sym_tab = SymTab()
@@ -322,8 +322,9 @@ def test_interpreter_conditional_while() -> None:
             )],
             ast.Identifier(L, 'b')
         )
-    ), sym_tab)) == 32
+    ), sym_tab)) == None
     assert(sym_tab.read('a')) == 5
+    assert(sym_tab.read('b')) == 32
 
 def test_interpreter_unit() -> None:
     assert(interpret(ast.Identifier(L, "unit"))) == None
