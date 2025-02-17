@@ -30,7 +30,6 @@ class Token:
         return self.text == other.text and self.type == other.type and (self.source == other.source or self.source == L or other.source == L)
 
 def tokenize(source_code: str) -> list[Token]:
-    print(source_code)
     one_line_comment_pat = re.compile(r'^(#|//).*')
     multi_line_comment_pat = re.compile(r'^(/\*).*(.*\n)*?.*?(\*/)')
     whitespace_pat = re.compile(r'^\s+')
@@ -45,7 +44,6 @@ def tokenize(source_code: str) -> list[Token]:
     row = 0
     col = 0
     while(start < len(source_code)):
-        print("checking from", start)
         whitespace = whitespace_pat.search(source_code[start:])
         one_line_comment = one_line_comment_pat.search(source_code[start:])
         multi_line_comment = multi_line_comment_pat.search(source_code[start:])
@@ -63,11 +61,7 @@ def tokenize(source_code: str) -> list[Token]:
             start += whitespace.end(0)
             col += whitespace.end(0)
         elif multi_line_comment:
-            comment_start = multi_line_comment.start(0)
-            comment_end = multi_line_comment.end(0)
-            print(comment_start,comment_end)
             linebreak_n = len(re.compile(r'\n').findall(multi_line_comment.group(0)))
-            print(linebreak_n)
             if linebreak_n:
                 for i, match in enumerate(re.compile(r'\n').finditer(multi_line_comment.group(0))):
                     row += 1
@@ -97,9 +91,6 @@ def tokenize(source_code: str) -> list[Token]:
             start += punctuation.end(0)
             col += punctuation.end(0)
         else:
-            print(source_code[start])
             start+=1
 
-    for token in tokens:
-        print(token, token.type)
     return tokens

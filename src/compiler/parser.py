@@ -109,7 +109,6 @@ def parse(tokens: list[Token]) -> ast.Expression:
         expr: ast.Expression = ast.Literal(L, None)
         if peek().type != "end":
             expr = parse_top(False)
-        print(expr)
         if peek().text == ";":
             consume(";")
             return parse_block(expressions+[expr])
@@ -223,5 +222,4 @@ def parse(tokens: list[Token]) -> ast.Expression:
     main_expression = parse_top()
     if peek().type != "end":
         raise(Exception(f'{peek().source}: garbage at end of expression.'))
-    print(main_expression)
     return main_expression
