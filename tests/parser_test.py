@@ -1162,6 +1162,19 @@ def test_var_declaration_possible_in_block() -> None:
         Token("+", "operator", L),
         Token("2", "int_literal", L),
         Token(";", "punctuation", L),
+
+        Token("var", "identifier", L),
+        Token("b", "identifier", L),
+        Token("=", "operator", L),
+        Token("1", "int_literal", L),
+        Token(";", "punctuation", L),
+
+        Token("var", "identifier", L),
+        Token("a", "identifier", L),
+        Token("=", "operator", L),
+        Token("1", "int_literal", L),
+        Token(";", "punctuation", L),
+
         Token("var", "identifier", L),
         Token("a", "identifier", L),
         Token("=", "operator", L),
@@ -1170,11 +1183,23 @@ def test_var_declaration_possible_in_block() -> None:
     ]
 
     assert(parse(tokens)) == ast.Block(L, 
-        [ast.BinaryOp(L, 
-            ast.Literal(L, 1),
-            '+',
-            ast.Literal(L, 2)
-        )],
+        [
+            ast.BinaryOp(L, 
+                ast.Literal(L, 1),
+                '+',
+                ast.Literal(L, 2)
+            ),
+            ast.BinaryOp(L, 
+                ast.VariableDeclaration(L, ast.Identifier(L, "b")),
+                "=",
+                ast.Literal(L, 1)
+            ),
+            ast.BinaryOp(L, 
+                ast.VariableDeclaration(L, ast.Identifier(L, "a")),
+                "=",
+                ast.Literal(L, 1)
+            )
+        ],
         
         ast.BinaryOp(L, 
             ast.VariableDeclaration(L, ast.Identifier(L, "a")),

@@ -1,7 +1,8 @@
 from compiler import ast, ir
 from compiler.symtab import SymTab
 from compiler.types import Bool, Int, Type, Unit
-from compiler.ir import IRVar
+from compiler.ir import IRVar, Label, Source
+from typing import List
 
 def generate_ir(
     # 'root_types' parameter should map all global names
@@ -23,6 +24,10 @@ def generate_ir(
         var = IRVar(reg_name)
         var_types[var] = t
         return var
+    
+    def new_label(loc: Source, name: str) -> Label:
+        # create a new Label that can be used as destination for jumps.
+        return Label(loc, name)
 
     # We collect the IR instructions that we generate
     # into this list.
@@ -48,12 +53,10 @@ def generate_ir(
                 match expr.value:
                     case bool():
                         var = new_var(Bool)
-                        ins.append(ir.LoadBoolConst(
-                            loc, expr.value, var))
+                        ins.append(ir.LoadBoolConst(loc, expr.value, var))
                     case int():
                         var = new_var(Int)
-                        ins.append(ir.LoadIntConst(
-                            loc, expr.value, var))
+                        ins.append(ir.LoadIntConst(loc, expr.value, var))
                     case None:
                         var = var_unit
                     case _:
@@ -68,24 +71,145 @@ def generate_ir(
                 # the source code variable.
                 return st.read(expr.name)
 
+            case ast.VariableDeclaration():
+                st.declare(expr.variable.name)
+                st.assign(expr.variable.name, new_var(expr.type))
+                return visit(st, expr.variable)
+
             case ast.BinaryOp():
-                # Ask the symbol table to return the variable that refers
-                # to the operator to call.
-                var_op = st.read(expr.op)
-                # Recursively emit instructions to calculate the operands.
-                var_left = visit(st, expr.left)
-                var_right = visit(st, expr.right)
-                # Generate variable to hold the result.
+                
+                match expr.op:
+                    case '=':
+                        var_right = visit(st, expr.right)
+                        var_left = visit(st, expr.left)
+                        ins.append(ir.Copy(loc, var_right, var_left))
+                        return var_unit
+                    case 'and':
+                        l_left = new_label(loc, "left_circut")
+                        l_right = new_label(loc, "right_eval")
+                        l_end = new_label(loc, "and_end")
+
+                        var_left = visit(st, expr.left)
+                        
+                        ins.append(ir.CondJump(loc, var_left, l_right, l_left))
+
+                        ins.append(l_right)
+                        var_right = visit(st, expr.right)
+                        var_result = new_var(expr.type)
+                        ins.append(ir.Copy(loc, var_right, var_result))
+                        ins.append(ir.Jump(loc, l_end))
+
+                        ins.append(l_left)
+                        ins.append(ir.LoadBoolConst(loc, False, var_result))
+                        ins.append(ir.Jump(loc, l_end))
+
+                        ins.append(l_end)
+                        return var_result
+                    case 'or':
+                        l_left = new_label(loc, "left_circut")
+                        l_right = new_label(loc, "right_eval")
+                        l_end = new_label(loc, "or_end")
+                        
+                        var_left = visit(st, expr.left)
+                        
+                        ins.append(ir.CondJump(loc, var_left, l_left, l_right))
+
+                        ins.append(l_right)
+                        var_right = visit(st, expr.right)
+                        var_result = new_var(expr.type)
+                        ins.append(ir.Copy(loc, var_right, var_result))
+                        ins.append(ir.Jump(loc, l_end))
+
+                        ins.append(l_left)
+                        ins.append(ir.LoadBoolConst(loc, True, var_result))
+                        ins.append(ir.Jump(loc, l_end))
+
+                        ins.append(l_end)
+                        return var_result
+                    case _:
+                        # Ask the symbol table to return the variable that refers
+                        # to the operator to call.
+                        var_op = st.read(expr.op)
+                        # Recursively emit instructions to calculate the operands.
+                        var_left = visit(st, expr.left)
+                        var_right = visit(st, expr.right)
+                        var_result = new_var(expr.type)
+                        # Generate variable to hold the result.
+                        
+                        # Emit a Call instruction that writes to that variable.
+                        ins.append(ir.Call(loc, var_op, [var_left, var_right], var_result))
+                        return var_result
+
+            case ast.UnaryOp():
+                var_op = st.read(f"unary_{expr.op}")
+                var_value = visit(st, expr.right)
                 var_result = new_var(expr.type)
-                # Emit a Call instruction that writes to that variable.
-                ins.append(ir.Call(
-                    loc, var_op, [var_left, var_right], var_result))
+                ins.append(ir.Call(loc, var_op, [var_value], var_result))
                 return var_result
-            
+
+            case ast.Conditional():
+                # Create (but don't emit) some jump targets.
+                l_then = new_label(loc, "if_then")
+                l_end = new_label(loc, "if_end")
+                # Recursively emit instructions for
+                # evaluating the condition.
+                var_cond = visit(st, expr.condition)
+                if expr.op == "if" and expr.second is None:
+                    # Emit a conditional jump instruction
+                    # to jump to 'l_then' or 'l_end',
+                    # depending on the content of 'var_cond'.
+                    ins.append(ir.CondJump(loc, var_cond, l_then, l_end))
+
+                    # Emit the label that marks the beginning of
+                    # the "then" branch.
+                    ins.append(l_then)
+                    # Recursively emit instructions for the "then" branch.
+                    visit(st, expr.first)
+
+                    # Emit the label that we jump to
+                    # when we don't want to go to the "then" branch.
+                    ins.append(l_end)
+                elif expr.op == "if" and expr.second is not None:
+                    # "if-then-else" case
+                    l_else = new_label(loc, "if_else")
+                    ins.append(ir.CondJump(loc, var_cond, l_then, l_else))
+                    ins.append(l_then)
+                    visit(st, expr.first)
+                    ins.append(ir.Jump(loc, l_end))
+                    ins.append(l_else)
+                    visit(st, expr.second)
+                    ins.append(l_end)
+                else:
+                    l_while = new_label(loc, "while_start")
+                    ins.append(ir.CondJump(loc, var_cond, l_then, l_end))
+                    ins.append(l_then)
+                    visit(st, expr.first)
+                    ins.append(ir.Jump(loc, l_while))
+                    ins.append(l_end)
+                # A conditional expression doesn't return anything, so we
+                # return a special variable "unit".
+                return var_unit
+
+            case ast.FunctionCall():
+                var_func = st.read(expr.function.name)
+                var_params: List[IRVar] = []
+                
+                for param in expr.parameters:
+                    var_params.append(visit(st, param))
+
+                var_result = new_var(expr.type)
+                
+                ins.append(ir.Call(loc, var_func, var_params, var_result))
+                return var_result
+
+            case ast.Block():
+                new_st = SymTab(st)
+                for expression in expr.expressions:
+                    visit(new_st, expression)
+                return visit(new_st, expr.result)
+
             case _:
                 raise Exception(f"{loc}: unknown expression.")
-
-            # Other AST node cases (see below)
 
     # Convert 'root_types' into a SymTab
     # that maps all available global names to

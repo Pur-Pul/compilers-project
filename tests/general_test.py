@@ -3,7 +3,7 @@ from compiler.tokenizer import tokenize
 from compiler.parser import parse
 from compiler.type_checker import typecheck
 from compiler.ir import IRVar
-from compiler.types import Int, Type, Unit
+from compiler.types import Int, Type, Unit, Bool
 
 def test_1() -> None:
     tokens = tokenize("1 + 2 * 3")
@@ -18,4 +18,55 @@ def test_1() -> None:
     for instruction in ir:
         print(instruction)
 
-test_1()
+def test_2() -> None:
+    tokens = tokenize("if 1 == 1 then 2 else 3")
+    expr = parse(tokens)
+    typecheck(expr)
+    root_types: dict[IRVar, Type] = {
+        IRVar('+') : Int,
+        IRVar('*') : Int,
+        IRVar('==') : Bool,
+        IRVar('print_int') : Unit
+    }
+    ir = generate_ir(root_types, expr)
+    for instruction in ir:
+        print(instruction)
+
+def test_3() -> None:
+    tokens = tokenize("true and false then 2 else 3")
+    expr = parse(tokens)
+    typecheck(expr)
+    root_types: dict[IRVar, Type] = {
+        IRVar('+') : Int,
+        IRVar('*') : Int,
+        IRVar('and') : Bool,
+        IRVar('or') : Bool,
+        IRVar('==') : Bool,
+        IRVar('print_int') : Unit
+    }
+    ir = generate_ir(root_types, expr)
+    for instruction in ir:
+        print(instruction)
+
+def test4() -> None:
+    tokens = tokenize("""
+        var a = 5;
+        var b = 4;
+        var c = -a * b;
+        print_int(c)
+    """)
+    expr = parse(tokens)
+    typecheck(expr)
+    root_types: dict[IRVar, Type] = {
+        IRVar('+') : Int,
+        IRVar('*') : Int,
+        IRVar('unary_-') : Int,
+        IRVar('and') : Bool,
+        IRVar('or') : Bool,
+        IRVar('==') : Bool,
+        IRVar('print_int') : Unit
+    }
+    ir = generate_ir(root_types, expr)
+    for instruction in ir:
+        print(instruction)
+test4()

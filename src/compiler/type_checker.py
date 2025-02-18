@@ -47,7 +47,9 @@ class SymTab:
             'unary_not': FunType([Bool], Bool),
             'if': FunType([Bool, Any, Any], Any),
             'while': FunType([Bool, Any], Unit),
-            'unit': Unit
+            'unit': Unit,
+            'print_int': FunType([Int], Unit),
+            'print_bool': FunType([Bool], Unit),
         }
 
         for variable, var_type in builtin_functions.items():
