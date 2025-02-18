@@ -169,16 +169,22 @@ def generate_ir(
                     # Emit the label that we jump to
                     # when we don't want to go to the "then" branch.
                     ins.append(l_end)
+                    # An if expression doesn't return anything, so we
+                    # return a special variable "unit".
+                    return var_unit
                 elif expr.op == "if" and expr.second is not None:
                     # "if-then-else" case
                     l_else = new_label(loc, "if_else")
+                    result = new_var(expr.type)
                     ins.append(ir.CondJump(loc, var_cond, l_then, l_else))
                     ins.append(l_then)
-                    visit(st, expr.first)
+                    ins.append(ir.Copy(loc, visit(st, expr.first), result))
                     ins.append(ir.Jump(loc, l_end))
                     ins.append(l_else)
-                    visit(st, expr.second)
+                    ins.append(ir.Copy(loc, visit(st, expr.second), result))
                     ins.append(l_end)
+                    # An if-else expression returns what it evaluates.
+                    return result
                 else:
                     l_while = new_label(loc, "while_start")
                     ins.append(ir.CondJump(loc, var_cond, l_then, l_end))
@@ -186,9 +192,10 @@ def generate_ir(
                     visit(st, expr.first)
                     ins.append(ir.Jump(loc, l_while))
                     ins.append(l_end)
-                # A conditional expression doesn't return anything, so we
-                # return a special variable "unit".
-                return var_unit
+                    # A while expression doesn't return anything, so we
+                    # return a special variable "unit".
+                    return var_unit
+                
 
             case ast.FunctionCall():
                 var_func = st.read(expr.function.name)

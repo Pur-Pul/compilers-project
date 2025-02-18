@@ -4,6 +4,7 @@ from compiler.parser import parse
 from compiler.type_checker import typecheck
 from compiler.ir import IRVar
 from compiler.types import Int, Type, Unit, Bool
+from compiler.assembly_generator import generate_assembly
 
 def test_1() -> None:
     tokens = tokenize("1 + 2 * 3")
@@ -48,7 +49,7 @@ def test_3() -> None:
     for instruction in ir:
         print(instruction)
 
-def test4() -> None:
+def test_4() -> None:
     tokens = tokenize("""
         var a = 5;
         var b = 4;
@@ -69,4 +70,22 @@ def test4() -> None:
     ir = generate_ir(root_types, expr)
     for instruction in ir:
         print(instruction)
-test4()
+
+def test_5() -> None:
+    tokens = tokenize("""{ var x = true; if x then 1 else 2; }""")
+    expr = parse(tokens)
+    typecheck(expr)
+    root_types: dict[IRVar, Type] = {
+        IRVar('+') : Int,
+        IRVar('*') : Int,
+        IRVar('unary_-') : Int,
+        IRVar('and') : Bool,
+        IRVar('or') : Bool,
+        IRVar('==') : Bool,
+        IRVar('print_int') : Unit
+    }
+    ir = generate_ir(root_types, expr)
+    print(generate_assembly(ir))
+    #for instruction in ir:
+    #    print(instruction)
+test_5()
