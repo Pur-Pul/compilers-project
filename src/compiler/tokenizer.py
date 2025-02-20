@@ -29,7 +29,7 @@ class Token:
             return NotImplemented
         return self.text == other.text and self.type == other.type and (self.source == other.source or self.source == L or other.source == L)
 
-def tokenize(source_code: str) -> list[Token]:
+def tokenize(source_code: str, file_name: str = "") -> list[Token]:
     one_line_comment_pat = re.compile(r'^(#|//).*')
     multi_line_comment_pat = re.compile(r'^(/\*).*(.*\n)*?.*?(\*/)')
     whitespace_pat = re.compile(r'^\s+')
@@ -80,22 +80,22 @@ def tokenize(source_code: str) -> list[Token]:
             start += one_line_comment.end(0)
         elif identifier:
             #print(start, identifier)
-            tokens.append(Token(text=identifier.group(0),type="identifier",source=Source('',row,col)))
+            tokens.append(Token(text=identifier.group(0),type="identifier",source=Source(file_name,row,col)))
             start += identifier.end(0)
             col += identifier.end(0)
         elif int_literal:
             #print(start, int_literal)
-            tokens.append(Token(text=int_literal.group(0),type="int_literal",source=Source('',row,col)))
+            tokens.append(Token(text=int_literal.group(0),type="int_literal",source=Source(file_name,row,col)))
             start += int_literal.end(0)
             col += int_literal.end(0)
         elif operator:
             #print(start, operator)
-            tokens.append(Token(text=operator.group(0),type="operator",source=Source('',row,col)))
+            tokens.append(Token(text=operator.group(0),type="operator",source=Source(file_name,row,col)))
             start += operator.end(0)
             col += operator.end(0)
         elif punctuation:
             #print(start, punctuation)
-            tokens.append(Token(text=punctuation.group(0),type="punctuation",source=Source('',row,col)))
+            tokens.append(Token(text=punctuation.group(0),type="punctuation",source=Source(file_name,row,col)))
             start += punctuation.end(0)
             col += punctuation.end(0)
         else:

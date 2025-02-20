@@ -1,3 +1,7 @@
 *.pyc
 __pycache__
 /.mypy_cache
+asmprogram
+test-code.txt
+test-code-output.txt
+.test-gadget

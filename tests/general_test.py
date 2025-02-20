@@ -110,22 +110,20 @@ def test_6() -> None:
     print(generate_assembly(ir))
 
 def test_7() -> None:
-    tokens = tokenize("""
-        f(1,2,3,4,5,6,7,8)
-    """)
-    expr = parse(tokens)
-    typecheck(expr)
+    f = open("test-code.txt", "r")
     root_types: dict[IRVar, Type] = {
         IRVar('+') : Int,
         IRVar('*') : Int,
-        IRVar('unary_-') : Int,
         IRVar('and') : Bool,
         IRVar('or') : Bool,
         IRVar('==') : Bool,
-        IRVar('/') : Bool,
         IRVar('print_int') : Unit,
-        IRVar('f') : Unit
+        IRVar('read_int') : Int,
     }
-    ir = generate_ir(root_types, expr)
-    print(generate_assembly(ir))
-test_7()
+    source = f.read()
+    expr = parse(tokenize(source, "test-code.txt"))
+    f.close()
+    typecheck(expr)
+    print(generate_assembly(generate_ir(root_types, expr)))
+    #executable = open("asmprogram", 'rb')
+    #return executable.read()

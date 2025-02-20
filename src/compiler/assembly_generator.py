@@ -58,18 +58,30 @@ def generate_assembly(instructions: list[ir.Instruction]) -> str:
         '*' : lambda args: lambdaN(emit, [f"movq {args[0]}, %rax", f"imulq {args[1]}, %rax"]),
         '/' : lambda args: lambdaN(emit, [f"movq {args[0]}, %rax", f"cqto", f"idivq {args[1]}"])
     }
-    vars = get_all_ir_variables(instructions, list(intrinsics.keys()) + ['=='])
+    vars = get_all_ir_variables(instructions, list(intrinsics.keys()) + ['==', 'print_int', 'print_bool', 'read_int'])
     locals = Locals(variables=vars)
 
     arg_reg = [f'%rdi', f'%rsi', f'%rdx', f'%rcx', f'%r8', f'%r9']
 
     # ... Emit initial declarations and stack setup here ...
+    emit(".extern print_int")
+    emit(".extern print_bool")
+    emit(".extern red_int")
+    emit("")
+    emit(".section .text")
+    emit("")
+    emit(".global main")
+    emit(".type main, @function")
+    emit("main:")
     for var in vars:
         emit(f'# {var.name} in {locals.get_ref(var)}')
     emit("")
     emit(f'pushq %rbp')
     emit(f'movq %rsp, %rbp')
-    emit(f'subq ${locals.stack_used()} %rsp')
+    emit(f'subq ${locals.stack_used()}, %rsp')
+    emit("")
+    emit("")
+    emit(f'.Lmain_start:')
     for insn in instructions:
         emit("")
         emit('# ' + str(insn))
@@ -125,14 +137,14 @@ def generate_assembly(instructions: list[ir.Instruction]) -> str:
                     for i in range(pushes):
                         emit(f'pushq {locals.get_ref(insn.args[-(i+1)])}')
 
-                    emit(f'callq {insn.fun}')
+                    emit(f'callq {insn.fun.name}')
                     emit(f'movq %rax, {locals.get_ref(insn.dest)}')
                     if pushes+alignment > 0:
-                        emit(f'addq ${(pushes+alignment)*8} %rsp')
+                        emit(f'addq ${(pushes+alignment)*8}, %rsp')
     emit("")
     emit('# Return(None)')
-    emit(f'movq $0 %rax')
-    emit(f'movq %rbp, rsp')
+    emit(f'movq $0, %rax')
+    emit(f'movq %rbp, %rsp')
     emit(f'popq %rbp')
     emit(f'ret')
     return '\n'.join(lines)

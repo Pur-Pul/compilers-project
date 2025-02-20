@@ -5,6 +5,14 @@ import sys
 from socketserver import ForkingTCPServer, StreamRequestHandler
 from traceback import format_exception
 from typing import Any
+from compiler.tokenizer import tokenize
+from compiler.parser import parse
+from compiler.type_checker import typecheck
+from compiler.ir_generator import generate_ir
+from compiler.assembly_generator import generate_assembly
+from compiler.assembler import assemble
+from compiler.ir import IRVar
+from compiler.types import Int, Bool, Unit, Type
 
 
 def call_compiler(source_code: str, input_file_name: str) -> bytes:
@@ -15,7 +23,34 @@ def call_compiler(source_code: str, input_file_name: str) -> bytes:
     # The input file name is informational only: you can optionally include in your source locations and error messages,
     # or you can ignore it.
     # *** TODO ***
-    raise NotImplementedError("Compiler not implemented")
+    f = open("asmprogram", "w")
+    f.close()
+    root_types: dict[IRVar, Type] = {
+        IRVar('+') : Int,
+        IRVar('-') : Int,
+        IRVar('*') : Int,
+        IRVar('/') : Int,
+        IRVar('%') : Int,
+        IRVar('and') : Bool,
+        IRVar('or') : Bool,
+        IRVar('==') : Bool,
+        IRVar('!=') : Bool,
+        IRVar('<') : Bool,
+        IRVar('<=') : Bool,
+        IRVar('>=') : Bool,
+        IRVar('>') : Bool,
+        IRVar('unary_-') : Int,
+        IRVar('unary_not') : Bool,
+        IRVar('print_int') : Unit,
+        IRVar('print_bool') : Unit,
+        IRVar('read_int') : Int,
+    }
+    expr = parse(tokenize(source_code, input_file_name))
+    typecheck(expr)
+    assemble(generate_assembly(generate_ir(root_types, expr)), "asmprogram")
+    executable = open("asmprogram", 'rb')
+    return executable.read()
+    #raise NotImplementedError("Compiler not implemented")
 
 
 def main() -> int:
