@@ -50,6 +50,7 @@ class SymTab:
             'unit': Unit,
             'print_int': FunType([Int], Unit),
             'print_bool': FunType([Bool], Unit),
+            #'f' : FunType([Int, Int, Int, Int, Int, Int, Int, Int], Unit)
         }
 
         for variable, var_type in builtin_functions.items():

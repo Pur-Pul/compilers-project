@@ -83,7 +83,7 @@ def generate_ir(
                         var_right = visit(st, expr.right)
                         var_left = visit(st, expr.left)
                         ins.append(ir.Copy(loc, var_right, var_left))
-                        return var_unit
+                        return var_left if type(expr.left) != ast.VariableDeclaration else var_unit
                     case 'and':
                         l_left = new_label(loc, "left_circut")
                         l_right = new_label(loc, "right_eval")

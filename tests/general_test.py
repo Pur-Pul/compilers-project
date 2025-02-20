@@ -34,7 +34,7 @@ def test_2() -> None:
         print(instruction)
 
 def test_3() -> None:
-    tokens = tokenize("true and false then 2 else 3")
+    tokens = tokenize("if true and false then 2 else 3")
     expr = parse(tokens)
     typecheck(expr)
     root_types: dict[IRVar, Type] = {
@@ -88,4 +88,44 @@ def test_5() -> None:
     print(generate_assembly(ir))
     #for instruction in ir:
     #    print(instruction)
-test_5()
+
+def test_6() -> None:
+    tokens = tokenize("""
+        var x = 5 + 6;
+        if x == 11 then x = x * 1 else x = x / 2;
+    """)
+    expr = parse(tokens)
+    typecheck(expr)
+    root_types: dict[IRVar, Type] = {
+        IRVar('+') : Int,
+        IRVar('*') : Int,
+        IRVar('unary_-') : Int,
+        IRVar('and') : Bool,
+        IRVar('or') : Bool,
+        IRVar('==') : Bool,
+        IRVar('/') : Bool,
+        IRVar('print_int') : Unit
+    }
+    ir = generate_ir(root_types, expr)
+    print(generate_assembly(ir))
+
+def test_7() -> None:
+    tokens = tokenize("""
+        f(1,2,3,4,5,6,7,8)
+    """)
+    expr = parse(tokens)
+    typecheck(expr)
+    root_types: dict[IRVar, Type] = {
+        IRVar('+') : Int,
+        IRVar('*') : Int,
+        IRVar('unary_-') : Int,
+        IRVar('and') : Bool,
+        IRVar('or') : Bool,
+        IRVar('==') : Bool,
+        IRVar('/') : Bool,
+        IRVar('print_int') : Unit,
+        IRVar('f') : Unit
+    }
+    ir = generate_ir(root_types, expr)
+    print(generate_assembly(ir))
+test_7()
