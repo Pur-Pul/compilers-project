@@ -38,7 +38,7 @@ def test_type_checker_assignment() -> None:
         ast.Identifier(L, 'a'),
         '=',
         ast.Literal(L, 2)
-    ), sym_tab)) == FunType([Any, Int], Int)
+    ), sym_tab)) == Int
     assert(sym_tab.read('a')) == Int
 
     sym_tab.declare('b')
@@ -46,7 +46,7 @@ def test_type_checker_assignment() -> None:
         ast.Identifier(L, 'b'),
         '=',
         ast.Literal(L, True)
-    ), sym_tab)) == FunType([Any, Bool], Bool)
+    ), sym_tab)) == Bool
     assert(sym_tab.read('b')) == Bool
 
     with pytest.raises(Exception) as e:
@@ -65,21 +65,21 @@ def test_type_checker_assignment_of_variable_declaration() -> None:
         ast.VariableDeclaration(L, ast.Identifier(L, 'a')),
         '=',
         ast.Literal(L, 2)
-    ), sym_tab)) == FunType([Any, Int], Int)
+    ), sym_tab)) == Int
     assert(sym_tab.read('a')) == Int
 
     assert(typecheck(ast.BinaryOp(L,
         ast.VariableDeclaration(L, ast.Identifier(L, 'b')),
         '=',
         ast.Literal(L, True)
-    ), sym_tab)) == FunType([Any, Bool], Bool)
+    ), sym_tab)) == Bool
     assert(sym_tab.read('b')) == Bool
 
     assert(typecheck(ast.BinaryOp(L,
         ast.VariableDeclaration(L, ast.Identifier(L, 'c')),
         '=',
         ast.Identifier(L, 'b'),
-    ), sym_tab)) == FunType([Any, Bool], Bool)
+    ), sym_tab)) ==  Bool
     assert(sym_tab.read('c')) == Bool
 
 def test_assignment_to_literal_fails_gracefully() -> None:
@@ -106,9 +106,9 @@ def test_type_checker_binary_operation() -> None:
         ))) == Bool
     for operation in ['and', 'or']:
         assert(typecheck(ast.BinaryOp(L, 
-            ast.Literal(L, 1),
+            ast.Literal(L, True),
             operation,
-            ast.Literal(L, 1),
+            ast.Literal(L, False),
         ))) == Bool
     for operation in ['==', '!=']:
         assert(typecheck(ast.BinaryOp(L, 

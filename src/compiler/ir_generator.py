@@ -11,6 +11,7 @@ def generate_ir(
     root_expr: ast.Expression
 ) -> list[ir.Instruction]:
     var_types: dict[IRVar, Type] = root_types.copy()
+    labels: dict[str, list[Label]] = {}
 
     # 'var_unit' is used when an expression's type is 'Unit'.
     var_unit = IRVar('unit')
@@ -27,7 +28,11 @@ def generate_ir(
     
     def new_label(loc: Source, name: str) -> Label:
         # create a new Label that can be used as destination for jumps.
-        return Label(loc, name)
+        if name in labels:
+            labels[name].append(Label(loc, f"{name}{len(labels[name])}"))
+        else:
+            labels[name] = [Label(loc, name)]
+        return labels[name][-1]
 
     # We collect the IR instructions that we generate
     # into this list.
@@ -73,7 +78,7 @@ def generate_ir(
 
             case ast.VariableDeclaration():
                 st.declare(expr.variable.name)
-                st.assign(expr.variable.name, new_var(expr.type))
+                st.assign(expr.variable.name, new_var(expr.variable.type))
                 return visit(st, expr.variable)
 
             case ast.BinaryOp():
@@ -149,12 +154,14 @@ def generate_ir(
 
             case ast.Conditional():
                 # Create (but don't emit) some jump targets.
-                l_then = new_label(loc, "if_then")
-                l_end = new_label(loc, "if_end")
+                
                 # Recursively emit instructions for
                 # evaluating the condition.
-                var_cond = visit(st, expr.condition)
+                
                 if expr.op == "if" and expr.second is None:
+                    var_cond = visit(st, expr.condition)
+                    l_then = new_label(loc, "if_then")
+                    l_end = new_label(loc, "if_end")
                     # Emit a conditional jump instruction
                     # to jump to 'l_then' or 'l_end',
                     # depending on the content of 'var_cond'.
@@ -173,6 +180,9 @@ def generate_ir(
                     # return a special variable "unit".
                     return var_unit
                 elif expr.op == "if" and expr.second is not None:
+                    var_cond = visit(st, expr.condition)
+                    l_then = new_label(loc, "if_then")
+                    l_end = new_label(loc, "if_end")
                     # "if-then-else" case
                     l_else = new_label(loc, "if_else")
                     result = new_var(expr.type)
@@ -186,12 +196,16 @@ def generate_ir(
                     # An if-else expression returns what it evaluates.
                     return result
                 else:
-                    l_while = new_label(loc, "while_start")
-                    ins.append(ir.CondJump(loc, var_cond, l_then, l_end))
-                    ins.append(l_then)
+                    l_while_start = new_label(loc, "while_start")
+                    l_while_body = new_label(loc, "while_body")
+                    l_while_end = new_label(loc, "while_end")
+                    ins.append(l_while_start)
+                    var_cond = visit(st, expr.condition)
+                    ins.append(ir.CondJump(loc, var_cond, l_while_body, l_while_end))
+                    ins.append(l_while_body)
                     visit(st, expr.first)
-                    ins.append(ir.Jump(loc, l_while))
-                    ins.append(l_end)
+                    ins.append(ir.Jump(loc, l_while_start))
+                    ins.append(l_while_end)
                     # A while expression doesn't return anything, so we
                     # return a special variable "unit".
                     return var_unit
@@ -228,7 +242,6 @@ def generate_ir(
     for v in root_types.keys():
         root_symtab.declare(v.name)
         root_symtab.assign(v.name, v)
-
     # Start visiting the AST from the root.
     var_final_result = visit(root_symtab, root_expr)
     dest = new_var(Unit)

@@ -15,7 +15,7 @@ class Type:
     def __ge__(self, other: object) -> bool:
         return isinstance(other, type(self))
 
-    def __gr__(self, other: object) -> bool:
+    def __gt__(self, other: object) -> bool:
         return self >= other and self != other
 
     def __str__(self) -> str:

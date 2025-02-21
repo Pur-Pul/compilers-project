@@ -1,6 +1,7 @@
 from compiler.tokenizer import Token, Source, L
 import compiler.ast as ast
 import compiler.types as types
+from typing import Optional
 
 def parse(tokens: list[Token]) -> ast.Expression:
     pos = 0
@@ -32,6 +33,22 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return Token(
                 source=tokens[-1].source,
                 type="end",
+                text="",
+            )
+    
+    def peek_last() -> Token:
+        if len(tokens) == 0:
+            return Token(
+                source=Source("",0,0),
+                type="end",
+                text="",
+            )
+        elif pos-1 > 0:
+            return tokens[pos-1]
+        else:
+            return Token(
+                source=tokens[0].source,
+                type="start",
                 text="",
             )
 
@@ -97,7 +114,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
 
     def parse_function(function_name: ast.Identifier) -> ast.FunctionCall:
         consume('(')
-        params = parse_list()
+        params = parse_list() if peek().text != ')' else []
         consume(')')
         return ast.FunctionCall(
             function_name.location,
@@ -105,21 +122,30 @@ def parse(tokens: list[Token]) -> ast.Expression:
             params,
         )
     
-    def parse_block(expressions: list[ast.Expression] = []) -> ast.Block:
+    def parse_block(expressions: list[ast.Expression] = [], last: Optional[ast.Expression] = None) -> ast.Block:
         expr: ast.Expression = ast.Literal(L, None)
+        
         if peek().type != "end":
             expr = parse_top(False)
-        if peek().text == ";":
-            consume(";")
-            return parse_block(expressions+[expr])
-        elif isinstance(expr, (ast.Block, ast.Conditional)):
-            block = parse_block(expressions+[expr])
-            if block.result == ast.Literal(expr.location, None):
-                block.result = expr
-                block.expressions = block.expressions[:-1]
-            return block
-        else:
+
+        separator = consume(";") if peek().text == ";" else None
+        
+        if separator is None and expr == ast.Literal(expr.location, None):
+            expr = expr if last is None else last
             return ast.Block(expr.location, expressions, expr)
+
+        elif separator is None and peek_last().text == "}":#isinstance(expr, (ast.Block, ast.Conditional)):
+            expressions = expressions if last is None else expressions+[last]
+            return parse_block(expressions, expr)
+
+        elif separator is None:
+            expressions = expressions if last is None else expressions+[last]
+            return ast.Block(expr.location, expressions, expr)
+        
+        else:
+            expressions = expressions if last is None else expressions+[last]
+            return parse_block(expressions + [expr])
+     
 
     def parse_variable_declaration() -> ast.VariableDeclaration:
         var = consume("var")
@@ -214,9 +240,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
     
     def parse_top(top : bool = True) -> ast.Expression:
         expr = parse_expression_right_binary(top=True)
-        if top and peek().text == ";":
-            consume(";")
-            expr = parse_block([expr])
+        if top:
+            separator = consume(";") if peek().text == ";" else None
+            if separator is not None or (peek_last().text == "}" and peek().type != "end"):
+                expr = parse_block([expr])
         return expr
     
     main_expression = parse_top()

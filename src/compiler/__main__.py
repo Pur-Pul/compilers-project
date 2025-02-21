@@ -13,7 +13,7 @@ from compiler.assembly_generator import generate_assembly
 from compiler.assembler import assemble
 from compiler.ir import IRVar
 from compiler.types import Int, Bool, Unit, Type
-
+import tempfile
 
 def call_compiler(source_code: str, input_file_name: str) -> bytes:
     # *** TODO ***
@@ -23,8 +23,6 @@ def call_compiler(source_code: str, input_file_name: str) -> bytes:
     # The input file name is informational only: you can optionally include in your source locations and error messages,
     # or you can ignore it.
     # *** TODO ***
-    f = open("asmprogram", "w")
-    f.close()
     root_types: dict[IRVar, Type] = {
         IRVar('+') : Int,
         IRVar('-') : Int,
@@ -45,10 +43,11 @@ def call_compiler(source_code: str, input_file_name: str) -> bytes:
         IRVar('print_bool') : Unit,
         IRVar('read_int') : Int,
     }
+    temp_file = tempfile.NamedTemporaryFile()
     expr = parse(tokenize(source_code, input_file_name))
     typecheck(expr)
-    assemble(generate_assembly(generate_ir(root_types, expr)), "asmprogram")
-    executable = open("asmprogram", 'rb')
+    assemble(generate_assembly(generate_ir(root_types, expr)), temp_file.name)
+    executable = open(temp_file.name, 'rb')
     return executable.read()
     #raise NotImplementedError("Compiler not implemented")
 

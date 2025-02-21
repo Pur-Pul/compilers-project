@@ -54,11 +54,20 @@ def generate_assembly(instructions: list[ir.Instruction]) -> str:
 
     intrinsics: dict[str, Callable[[list[str]], None]] = {
         '+' : lambda args: lambdaN(emit, [f"movq {args[0]}, %rax", f"addq {args[1]}, %rax"]),
-        '-' : lambda args: lambdaN(emit, [f"movq {args[1]}, %rax", f"subq {args[0]}, %rax"]),
+        '-' : lambda args: lambdaN(emit, [f"movq {args[0]}, %rax", f"subq {args[1]}, %rax"]),
         '*' : lambda args: lambdaN(emit, [f"movq {args[0]}, %rax", f"imulq {args[1]}, %rax"]),
-        '/' : lambda args: lambdaN(emit, [f"movq {args[0]}, %rax", f"cqto", f"idivq {args[1]}"])
+        '/' : lambda args: lambdaN(emit, [f"movq {args[0]}, %rax", f"cqto", f"idivq {args[1]}"]),
+        '%' : lambda args: lambdaN(emit, [f"movq {args[0]}, %rax", f"cqto", f"idivq {args[1]}", f"movq %rdx, %rax"]),
+        '==' : lambda args: lambdaN(emit, [f"xor %rax, %rax", f"movq {args[0]}, %rdx", f"cmpq {args[1]}, %rdx", f"sete %al"]),
+        '!=' : lambda args: lambdaN(emit, [f"xor %rax, %rax", f"movq {args[0]}, %rdx", f"cmpq {args[1]}, %rdx", f"setne %al"]),
+        '<' : lambda args: lambdaN(emit, [f"xor %rax, %rax", f"movq {args[0]}, %rdx", f"cmpq {args[1]}, %rdx", f"setl %al"]),
+        '<=' : lambda args: lambdaN(emit, [f"xor %rax, %rax", f"movq {args[0]}, %rdx", f"cmpq {args[1]}, %rdx", f"setle %al"]),
+        '>' : lambda args: lambdaN(emit, [f"xor %rax, %rax", f"movq {args[0]}, %rdx", f"cmpq {args[1]}, %rdx", f"setg %al"]),
+        '>=' : lambda args: lambdaN(emit, [f"xor %rax, %rax", f"movq {args[0]}, %rdx", f"cmpq {args[1]}, %rdx", f"setge %al"]),
+        'unary_-' : lambda args: lambdaN(emit, [f"movq {args[0]}, %rax", f"negq %rax"]),
+        'unary_not' : lambda args: lambdaN(emit, [f"movq {args[0]}, %rax", f"xorq $1, %rax"]),
     }
-    vars = get_all_ir_variables(instructions, list(intrinsics.keys()) + ['==', 'print_int', 'print_bool', 'read_int'])
+    vars = get_all_ir_variables(instructions, list(intrinsics.keys()) + ['print_int', 'print_bool', 'read_int'])
     locals = Locals(variables=vars)
 
     arg_reg = [f'%rdi', f'%rsi', f'%rdx', f'%rcx', f'%r8', f'%r9']
@@ -147,4 +156,5 @@ def generate_assembly(instructions: list[ir.Instruction]) -> str:
     emit(f'movq %rbp, %rsp')
     emit(f'popq %rbp')
     emit(f'ret')
+    emit(f"")
     return '\n'.join(lines)

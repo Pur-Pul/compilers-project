@@ -8,6 +8,8 @@ class SymTab[T]:
         self.locals = {}
 
     def declare(self, variable: str) -> None:
+        if variable in self.locals:
+            raise Exception(f"Local variable '{variable}' is already declared.")
         self.locals[variable] = None
 
     def assign(self, variable: str, value: T) -> None:

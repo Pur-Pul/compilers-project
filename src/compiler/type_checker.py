@@ -50,6 +50,7 @@ class SymTab:
             'unit': Unit,
             'print_int': FunType([Int], Unit),
             'print_bool': FunType([Bool], Unit),
+            'read_int': FunType([], Int)
             #'f' : FunType([Int, Int, Int, Int, Int, Int, Int, Int], Unit)
         }
 
@@ -81,7 +82,6 @@ def typecheck_resolve(node: ast.Expression, sym_tab: SymTab) -> Type:
         case ast.BinaryOp():
             t1 = typecheck(node.left, sym_tab)
             t2 = typecheck(node.right, sym_tab)
-
             if node.op == '=':
                 left: ast.Identifier
                 if isinstance(node.left, ast.Identifier):
@@ -90,19 +90,23 @@ def typecheck_resolve(node: ast.Expression, sym_tab: SymTab) -> Type:
                     else:
                         left = node.left  
                 elif isinstance(node.left, ast.VariableDeclaration):
+                    if t1 < t2 or not t1 >= t2:
+                        raise Exception(f"Left and right of '{node.op}' are of different types. {t1} != {t2}")
                     left = node.left.variable
+                    node.left.variable.type = t2
                 else:
                     raise Exception(f"Unsupported type '{t1}' to the left of '{node.op}'.")
                 
                 sym_tab.assign(left.name, t2)
-                return FunType([t1, t2], t2)
+                return t2
 
             operation = sym_tab.read(node.op)
             if not isinstance(operation, FunType):
                 raise Exception(f"'{node.op}' is not a binary function.")
-            if t1 > operation.parameters[0]:
+            
+            if not t1 <= operation.parameters[0]:
                 raise Exception(f"Unsupported type '{t1}' left of '{node.op}'. {operation}")
-            if t2 > operation.parameters[1]:
+            if not t2 <= operation.parameters[1]:
                 raise Exception(f"Unsupported type '{t2}' right of '{node.op}'. {operation}")
             else:
                 return operation.value
@@ -170,7 +174,7 @@ def typecheck_resolve(node: ast.Expression, sym_tab: SymTab) -> Type:
                 raise Exception(f"'{node.op}' is not a conditional.")
 
         case _:
-            raise Exception(f"Unkown expression {node}")
+            raise Exception(f"Unknown expression {node}")
 
 def typecheck(node: ast.Expression, sym_tab: Optional[SymTab] = None) -> Type:
     if sym_tab is None:

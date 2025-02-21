@@ -109,21 +109,36 @@ def test_6() -> None:
     ir = generate_ir(root_types, expr)
     print(generate_assembly(ir))
 
+
 def test_7() -> None:
     f = open("test-code.txt", "r")
     root_types: dict[IRVar, Type] = {
         IRVar('+') : Int,
+        IRVar('-') : Int,
         IRVar('*') : Int,
+        IRVar('/') : Int,
+        IRVar('%') : Int,
         IRVar('and') : Bool,
         IRVar('or') : Bool,
         IRVar('==') : Bool,
+        IRVar('!=') : Bool,
+        IRVar('<') : Bool,
+        IRVar('<=') : Bool,
+        IRVar('>=') : Bool,
+        IRVar('>') : Bool,
+        IRVar('unary_-') : Int,
+        IRVar('unary_not') : Bool,
         IRVar('print_int') : Unit,
+        IRVar('print_bool') : Unit,
         IRVar('read_int') : Int,
     }
     source = f.read()
-    expr = parse(tokenize(source, "test-code.txt"))
+    tokens = tokenize(source, "test-code.txt")
+    for token in tokens:
+        print(token)
+    expr = parse(tokens)
+    print(expr)
     f.close()
     typecheck(expr)
     print(generate_assembly(generate_ir(root_types, expr)))
-    #executable = open("asmprogram", 'rb')
-    #return executable.read()
+test_7()
