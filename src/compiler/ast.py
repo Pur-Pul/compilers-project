@@ -9,6 +9,16 @@ class Expression:
     type: Type = field(kw_only=True, default=Unit)
 
 @dataclass
+class Break(Expression):
+    def __str__ (self) -> str:
+        return "break"
+
+@dataclass
+class Continue(Expression):
+    def __str__ (self) -> str:
+        return "continue"
+
+@dataclass
 class Literal(Expression):
     value: int | bool | None
     def __str__ (self) -> str:

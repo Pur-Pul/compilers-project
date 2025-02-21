@@ -12,6 +12,8 @@ def generate_ir(
 ) -> list[ir.Instruction]:
     var_types: dict[IRVar, Type] = root_types.copy()
     labels: dict[str, list[Label]] = {}
+    loop_start: list[Label] = []
+    loop_end: list[Label] = []
 
     # 'var_unit' is used when an expression's type is 'Unit'.
     var_unit = IRVar('unit')
@@ -51,6 +53,18 @@ def generate_ir(
         loc = expr.location
 
         match expr:
+            case ast.Continue():
+                if len(loop_start) == 0:
+                    raise Exception("Continue outside loop.")
+                ins.append(ir.Jump(loc, loop_start[-1]))
+                return var_unit
+
+            case ast.Break():
+                if len(loop_end) == 0:
+                    raise Exception("Break outside loop.")
+                ins.append(ir.Jump(loc, loop_end[-1]))
+                return var_unit
+
             case ast.Literal():
                 # Create an IR variable to hold the value,
                 # and emit the correct instruction to
@@ -203,13 +217,17 @@ def generate_ir(
                     var_cond = visit(st, expr.condition)
                     ins.append(ir.CondJump(loc, var_cond, l_while_body, l_while_end))
                     ins.append(l_while_body)
+                    loop_start.append(l_while_start)
+                    loop_end.append(l_while_end)
                     visit(st, expr.first)
+                    loop_start.pop()
+                    loop_end.pop()
+
                     ins.append(ir.Jump(loc, l_while_start))
                     ins.append(l_while_end)
                     # A while expression doesn't return anything, so we
                     # return a special variable "unit".
                     return var_unit
-                
 
             case ast.FunctionCall():
                 var_func = st.read(expr.function.name)

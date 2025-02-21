@@ -176,6 +176,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
             case "identifier":
                 if top and peek().text == "var":
                     expr = parse_variable_declaration()
+                elif peek().text == "continue":
+                    expr = ast.Continue(consume("continue").source)
+                elif peek().text == "break":
+                    expr = ast.Break(consume("break").source)
                 else:
                     match peek().text:
                         case "if" | "while":

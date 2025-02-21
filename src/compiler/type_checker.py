@@ -69,6 +69,12 @@ def typecheck_resolve(node: ast.Expression, sym_tab: SymTab) -> Type:
                 return Unit
             else:
                 raise Exception(f"Unsupported type '{type(node.value)}' for literal.")
+        
+        case ast.Continue():
+            return Unit
+
+        case ast.Break():
+            return Unit
 
         case ast.Identifier():
             return sym_tab.read(node.name)
